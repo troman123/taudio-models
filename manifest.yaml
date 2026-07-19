@@ -1,8 +1,8 @@
-# taudio-engines manifest
+# taudio-models manifest
 # Weights NEVER in git. Models expose a unified ModelParams schema for TaudioProcess.
 schema_version: 2
 
-# Shared param fragments referenced by engines (optional DRY).
+# Shared param fragments referenced by catalog (optional DRY).
 param_presets:
   device:
     name: device
@@ -16,7 +16,7 @@ param_presets:
     default: true
     description: Prefer GPU when available
 
-engines:
+catalog:
   ause:
     display_name: Audio Separator (RoFormer / MDX)
     description: Vocal / instrumental / lead / backing separation via audio-separator stack
@@ -127,5 +127,5 @@ engines:
         type: bool
         default: true
 
-# Register downloadable weights here (urls + sha256). Empty until published.
-models: {}
+# Downloadable weight files (never committed to git)
+weights: {}

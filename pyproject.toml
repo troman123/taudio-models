@@ -3,13 +3,13 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "taudio-engines"
-version = "0.1.0"
-description = "Open-source audio separation engine libs + model download/cache for TaudioProcess"
+name = "taudio-models"
+version = "0.2.0"
+description = "Open-source audio model layer: catalog, versions, download/cache, load (no engine/pipeline)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "taudio-engines contributors" }]
+authors = [{ name = "taudio-models contributors" }]
 dependencies = [
   "PyYAML>=6.0",
 ]
@@ -18,7 +18,7 @@ dependencies = [
 dev = ["pytest>=7.0"]
 
 [project.scripts]
-taudio-engines-fetch = "taudio_engines.cli:main"
+taudio-models-fetch = "taudio_models.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -5,19 +5,25 @@ import json
 import sys
 from pathlib import Path
 
-from taudio_engines.api.registry import open_registry
-from taudio_engines.cache import cache_root, ensure_model
-from taudio_engines.manifest import load_manifest, repo_root_from
+from taudio_models.api.registry import open_registry
+from taudio_models.cache import cache_root, ensure_model
+from taudio_models.manifest import load_manifest, repo_root_from
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="taudio-engines-fetch",
-        description="List engines / download weights (weights never in git).",
+        prog="taudio-models-fetch",
+        description="List catalog / download weights (model layer; no engine I/O).",
     )
-    parser.add_argument("--repo", type=Path, default=None, help="taudio-engines repo root")
-    parser.add_argument("--list", action="store_true", help="List weight ids in models:")
-    parser.add_argument("--list-engines", action="store_true", help="List callable engines + params")
+    parser.add_argument("--repo", type=Path, default=None, help="taudio-models repo root")
+    parser.add_argument("--list", action="store_true", help="List weight ids in weights:")
+    parser.add_argument(
+        "--list-engines",
+        "--list-catalog",
+        action="store_true",
+        dest="list_catalog",
+        help="List catalog models + ModelParams",
+    )
     parser.add_argument("--json", action="store_true", help="JSON output for --list-engines")
     parser.add_argument("--model", type=str, default=None, help="Download one weight id")
     parser.add_argument("--all", action="store_true", help="Download all weights")
@@ -30,7 +36,7 @@ def main(argv: list[str] | None = None) -> int:
         print("error: %s" % e, file=sys.stderr)
         return 2
 
-    if args.list_engines:
+    if args.list_catalog:
         reg = open_registry(root)
         infos = [m.to_dict() for m in reg.list_models(include_planned=True)]
         if args.json:

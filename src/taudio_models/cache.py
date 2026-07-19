@@ -9,7 +9,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from taudio_engines.manifest import get_model
+from taudio_models.manifest import get_model
 
 
 def cache_root() -> Path:
@@ -17,13 +17,13 @@ def cache_root() -> Path:
     Resolve model cache directory.
 
     1. $TAUDIO_MODEL_CACHE
-    2. ~/.cache/taudio-engines/models
+    2. ~/.cache/taudio-models/models
     """
     env = os.environ.get("TAUDIO_MODEL_CACHE", "").strip()
     if env:
         root = Path(env).expanduser().resolve()
     else:
-        root = Path.home() / ".cache" / "taudio-engines" / "models"
+        root = Path.home() / ".cache" / "taudio-models" / "models"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -90,7 +90,7 @@ def _download(url: str, dest: Path, expected_sha256: Optional[str]) -> None:
     with tempfile.NamedTemporaryFile(delete=False, dir=str(dest.parent)) as tmp:
         tmp_path = Path(tmp.name)
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "taudio-engines/0.1"})
+        req = urllib.request.Request(url, headers={"User-Agent": "taudio-models/0.1"})
         with urllib.request.urlopen(req, timeout=120) as resp, tmp_path.open("wb") as out:
             shutil.copyfileobj(resp, out)
         if expected_sha256:

@@ -13,8 +13,8 @@ REQUIRED = [
     "manifest.yaml",
     "docs/model-cache.md",
     "docs/nonfree.md",
-    "src/taudio_engines/cache.py",
-    "src/taudio_engines/manifest.py",
+    "src/taudio_models/cache.py",
+    "src/taudio_models/manifest.py",
 ]
 
 

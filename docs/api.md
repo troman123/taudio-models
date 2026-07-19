@@ -1,48 +1,50 @@
-# Fixed API between taudio-engines and TaudioProcess
+# Fixed API: open-source model layer (taudio-models) vs closed engine layer (TaudioProcess)
 
-TaudioProcess must not call engine internals. It only uses:
+## Boundary
 
-1. `list_models` / `get_model` — discover what can be run and each model's `ModelParam` schema
-2. `run_model(model_id, input_path, output_dir, params: dict)` — one fixed execute entry
-3. `ModelParams` — every model accepts the same envelope; values are validated against that model's schema
+| Layer | Repo | Responsibility |
+|-------|------|----------------|
+| **Model layer** (open) | `taudio-models` | Model structure, version, `ModelParams` schema, weight download/cache, `load()` handle |
+| **Engine layer** (closed) | `TaudioProcess` only | How to call: file / PCM frame / bytes; orchestration; writing stems |
 
-## Python (engines side)
+Open source must **not** implement `process_file` / pipeline run. That stays private.
+
+## Model layer Python API
 
 ```python
 from pathlib import Path
-from taudio_engines import open_registry, Capability
+from taudio_models import open_registry
 
-reg = open_registry(Path("/path/to/taudio-engines"))
+reg = open_registry(Path("/path/to/taudio-models"))
 
 # query
 for m in reg.list_models(include_planned=True):
-    print(m.id, m.status.value, [p.name for p in m.params])
+    print(m.id, m.version, m.status.value, [p.name for p in m.params])
 
-info = reg.get_model("ause")          # or alias "ausev"
-print(info.to_dict())                 # JSON-serializable card
+info = reg.get_model("ause")   # or alias "ausev"
 
-# run (when status=available and Engine wired)
-# result = reg.run_model("ause", "in.wav", "out/", {"variant": "vocal", "model_weight": "rofep"})
+# download weights (if weight_ids registered) + load handle
+loaded = reg.load_model("ause", {"variant": "vocal", "model_weight": "rofep"})
+# loaded.info / loaded.params / loaded.weight_paths / loaded.backend
 ```
 
-## Contract types
+## Types
 
 | Type | Role |
 |------|------|
-| `ModelInfo` | Queryable card: id, capabilities, params, stems, status |
-| `ModelParam` | One parameter definition (name/type/default/range/choices) |
-| `ModelParams` | Runtime values dict; `validated(info)` before run |
-| `RunRequest` / `RunResult` | Fixed request/response for execute |
-| `Engine` | Interface every model implements: `info()` + `run(...)` |
+| `ModelInfo` | Queryable card: id, version, capabilities, params, stems |
+| `ModelParam` | One parameter definition |
+| `ModelParams` | Runtime values; `validated(info)` |
+| `Model` | `info()` / `ensure_weights()` / `load()` |
+| `LoadedModel` | Opaque handle for the closed engine layer |
 
-## Adding a new model
+## Engine layer (TaudioProcess, not in this repo)
 
-1. Add engine entry under `engines:` in `manifest.yaml` with `params`, `capabilities`, `output_stems`.
-2. Implement `Engine` subclass and `@register_engine("id")`.
-3. Set `status: available` only when runnable.
-4. Register weight download entries under `models:` (urls/sha256); never commit binaries.
+```python
+# private
+engine.process_file(path, model_id, params)
+engine.process_array(pcm, sr, model_id, params)
+engine.process_bytes(data, model_id, params)
+```
 
-## JSON shape (for future iOS / IPC)
-
-`ModelInfo.to_dict()` and `RunRequest.to_dict()` / `RunResult.to_dict()` are the wire format.
-Do not invent a second parameter system in TaudioProcess.
+These call `load_model` then run inference / I/O privately.

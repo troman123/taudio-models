@@ -9,15 +9,15 @@
 ## Cache root resolution
 
 1. Environment variable `TAUDIO_MODEL_CACHE` (recommended for servers / shared disks)
-2. Otherwise `~/.cache/taudio-engines/models`
+2. Otherwise `~/.cache/taudio-models/models`
 
 Cached file path: `{cache_root}/{cache_key}`.
 
 ## API
 
-- `taudio_engines.cache.ensure_model(manifest, model_id)` — download if missing/mismatched
-- `taudio_engines.cache.cache_root()` — resolve cache directory
-- CLI: `taudio-engines-fetch --list|--model ID|--all`
+- `taudio_models.cache.ensure_model(manifest, model_id)` — download if missing/mismatched
+- `taudio_models.cache.cache_root()` — resolve cache directory
+- CLI: `taudio-models-fetch --list|--model ID|--all`
 
 ## Adding a model
 

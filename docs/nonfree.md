@@ -1,6 +1,6 @@
 # Non-free / not in this repository
 
-The following must **not** be committed to `taudio-engines`:
+The following must **not** be committed to `taudio-models`:
 
 | Item | Reason | How to use locally |
 |------|--------|--------------------|

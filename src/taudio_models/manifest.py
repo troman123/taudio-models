@@ -26,17 +26,27 @@ def load_manifest(path: Optional[Path] = None) -> Dict[str, Any]:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(data, dict):
         raise ValueError("manifest root must be a mapping: %s" % path)
-    data.setdefault("engines", {})
-    data.setdefault("models", {})
+    # Normalize legacy keys
+    if "catalog" not in data and isinstance(data.get("engines"), dict):
+        data["catalog"] = data["engines"]
+    if "weights" not in data and isinstance(data.get("models"), dict):
+        data["weights"] = data["models"]
+    data.setdefault("catalog", {})
+    data.setdefault("weights", {})
     data["_manifest_path"] = str(path.resolve())
     return data
 
 
-def get_model(manifest: Dict[str, Any], model_id: str) -> Dict[str, Any]:
-    models = manifest.get("models") or {}
-    if model_id not in models:
-        raise KeyError("model id not in manifest: %s" % model_id)
-    entry = models[model_id]
+def get_weight(manifest: Dict[str, Any], weight_id: str) -> Dict[str, Any]:
+    weights = manifest.get("weights") or manifest.get("models") or {}
+    if weight_id not in weights:
+        raise KeyError("weight id not in manifest: %s" % weight_id)
+    entry = weights[weight_id]
     if not isinstance(entry, dict):
-        raise ValueError("model entry must be a mapping: %s" % model_id)
+        raise ValueError("weight entry must be a mapping: %s" % weight_id)
     return entry
+
+
+# Back-compat name used by cache.ensure_model
+def get_model(manifest: Dict[str, Any], model_id: str) -> Dict[str, Any]:
+    return get_weight(manifest, model_id)

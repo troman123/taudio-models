@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Union
 
 
 class ModelStatus(str, Enum):
@@ -42,7 +42,7 @@ class StemKind(str, Enum):
 
 @dataclass(frozen=True)
 class ModelParam:
-    """One tunable parameter exposed the same way for every model."""
+    """One tunable parameter — same schema for every model."""
 
     name: str
     type: ParamType
@@ -74,11 +74,12 @@ class ModelParam:
 
 @dataclass(frozen=True)
 class ModelInfo:
-    """Queryable model capability card — stable contract for TaudioProcess / clients."""
+    """Queryable model card (structure + params). No I/O / process semantics."""
 
     id: str
     display_name: str
     status: ModelStatus
+    version: str = "0.0.0"
     capabilities: List[Capability] = field(default_factory=list)
     params: List[ModelParam] = field(default_factory=list)
     output_stems: List[StemKind] = field(default_factory=list)
@@ -92,6 +93,7 @@ class ModelInfo:
             "id": self.id,
             "display_name": self.display_name,
             "status": self.status.value,
+            "version": self.version,
             "capabilities": [c.value for c in self.capabilities],
             "params": [p.to_dict() for p in self.params],
             "output_stems": [s.value for s in self.output_stems],
@@ -107,6 +109,7 @@ class ModelInfo:
             id=str(data["id"]),
             display_name=str(data.get("display_name") or data["id"]),
             status=ModelStatus(str(data.get("status", "planned"))),
+            version=str(data.get("version") or "0.0.0"),
             capabilities=[Capability(x) for x in (data.get("capabilities") or [])],
             params=[ModelParam.from_dict(p) for p in (data.get("params") or [])],
             output_stems=[StemKind(x) for x in (data.get("output_stems") or [])],
@@ -119,12 +122,7 @@ class ModelInfo:
 
 @dataclass
 class ModelParams:
-    """
-    Unified parameter bag passed into every model.run().
-
-    Unknown keys are rejected unless allow_extra=True.
-    Values are coerced/validated against ModelInfo.params.
-    """
+    """Unified parameter bag for every model.load() / engine.process()."""
 
     values: Dict[str, Any] = field(default_factory=dict)
 
@@ -155,47 +153,6 @@ class ModelParams:
             else:
                 out[name] = spec.default
         return ModelParams(values=out)
-
-
-@dataclass(frozen=True)
-class Artifact:
-    stem: StemKind
-    path: Path
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {"stem": self.stem.value, "path": str(self.path)}
-
-
-@dataclass(frozen=True)
-class RunRequest:
-    """Fixed request shape for TaudioProcess -> engines."""
-
-    model_id: str
-    input_path: Path
-    output_dir: Path
-    params: ModelParams = field(default_factory=ModelParams)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "model_id": self.model_id,
-            "input_path": str(self.input_path),
-            "output_dir": str(self.output_dir),
-            "params": self.params.to_dict(),
-        }
-
-
-@dataclass(frozen=True)
-class RunResult:
-    model_id: str
-    artifacts: List[Artifact]
-    meta: Dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "model_id": self.model_id,
-            "artifacts": [a.to_dict() for a in self.artifacts],
-            "meta": dict(self.meta),
-        }
 
 
 def _coerce(spec: ModelParam, value: Any) -> Any:
@@ -232,6 +189,3 @@ def _range_check(spec: ModelParam, value: Union[int, float]) -> None:
         raise ValueError("param %s < minimum %s" % (spec.name, spec.minimum))
     if spec.maximum is not None and value > spec.maximum:
         raise ValueError("param %s > maximum %s" % (spec.name, spec.maximum))
-
-
-JsonDict = Dict[str, Any]
