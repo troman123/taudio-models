@@ -9,6 +9,7 @@ This repo is the **open-source engines** dependency for local `TaudioProcess`.
 3. **Never add proprietary SDKs** (e.g. `mpa_sdk`) — see `docs/nonfree.md`.
 4. Keep umbrella packaging under **MIT**. Preserve upstream LICENSE files under `licenses/<name>/` and update `NOTICE` when vendoring libs into `libs/`.
 5. Prefer small, reviewable PRs: one engine or one manifest/model entry at a time.
+6. **Stable API only:** TaudioProcess talks via `open_registry().list_models / get_model / run_model` and unified `ModelParams`. Do not expose lib-specific kwargs outside `ModelParam` schemas. See `docs/api.md`.
 
 ## Layout
 

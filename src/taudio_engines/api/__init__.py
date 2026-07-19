@@ -1,23 +1,19 @@
-"""taudio-engines: unified model API + download/cache (weights never in git)."""
+"""Public API surface for TaudioProcess and Cloud Agents."""
 
-from taudio_engines.api import (
+from taudio_engines.api.engine import Engine
+from taudio_engines.api.registry import Registry, open_registry, register_engine
+from taudio_engines.api.types import (
     Artifact,
     Capability,
-    Engine,
     ModelInfo,
     ModelParam,
     ModelParams,
     ModelStatus,
     ParamType,
-    Registry,
     RunRequest,
     RunResult,
     StemKind,
-    open_registry,
-    register_engine,
 )
-from taudio_engines.cache import cache_root, ensure_model
-from taudio_engines.manifest import load_manifest, repo_root_from
 
 __all__ = [
     "Artifact",
@@ -32,12 +28,6 @@ __all__ = [
     "RunRequest",
     "RunResult",
     "StemKind",
-    "cache_root",
-    "ensure_model",
-    "load_manifest",
     "open_registry",
     "register_engine",
-    "repo_root_from",
 ]
-
-__version__ = "0.1.0"

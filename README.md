@@ -64,9 +64,17 @@ docs/                 # cache policy, non-free components
 
 ## Use with local TaudioProcess
 
+Fixed interface (query + run): see [docs/api.md](docs/api.md).
+
 ```bash
 export TAUDIO_ENGINES_ROOT=/path/to/taudio-engines
-# framework resolves libs + calls ensure_model before inference
+```
+
+```python
+from taudio_engines import open_registry
+reg = open_registry()
+models = reg.list_models()          # what can be called + ModelParam schemas
+# reg.run_model("ause", "in.wav", "out/", {"variant": "vocal"})
 ```
 
 ## Cloud Agents
