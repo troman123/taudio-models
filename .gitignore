@@ -1,0 +1,29 @@
+# Local model/runtime caches (never commit weights)
+.cache/
+*.ckpt
+*.pth
+*.pt
+*.onnx
+*.safetensors
+*.bin
+*.so
+*.dylib
+*.dll
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

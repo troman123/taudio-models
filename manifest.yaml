@@ -1,0 +1,50 @@
+# taudio-engines manifest
+# Weights are NEVER stored in git. Runtime downloads into the model cache.
+schema_version: 1
+
+engines:
+  ause:
+    lib: libs/audio_separatorv
+    aliases: [ausev, ausevl, ausevb, ausei, auseiv]
+    requires_models: []
+    license_spdx: TBD
+    license_file: licenses/audio_separatorv/LICENSE
+    redistributable: true
+    status: planned
+  melro:
+    lib: libs/mel_band_roformer
+    aliases: [melrov, melroi, melroiv]
+    requires_models: []
+    license_spdx: TBD
+    license_file: licenses/melro/LICENSE
+    redistributable: true
+    status: planned
+  demucs:
+    lib: libs/demucsv
+    aliases: [dmiv]
+    requires_models: []
+    license_spdx: MIT
+    license_file: licenses/demucs/LICENSE
+    redistributable: true
+    status: planned
+  deepfilter:
+    lib: libs/DeepFilterNet
+    aliases: [de, de2, de3, dede, dede2]
+    requires_models: []
+    license_spdx: TBD
+    license_file: licenses/deepfilternet/LICENSE
+    redistributable: true
+    status: planned
+
+# Example model entry shape (fill urls/sha256 when publishing a model):
+# models:
+#   example_ckpt:
+#     cache_key: example/model.ckpt
+#     urls:
+#       - https://example.com/model.ckpt
+#     sha256: ""
+#     license_spdx: MIT
+#     size_hint_mb: 100
+#     redistributable: true
+
+models: {}

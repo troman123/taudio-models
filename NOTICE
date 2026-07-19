@@ -1,0 +1,22 @@
+taudio-engines
+==============
+
+This repository contains packaging, manifests, download/cache helpers, and
+vendored open-source engine libraries (when present under libs/).
+
+Umbrella license for original packaging code in this repository: MIT
+(see LICENSE).
+
+Third-party components
+----------------------
+
+Upstream licenses for vendored libraries must be recorded here and copied
+under licenses/<component>/ when those libraries are added.
+
+| Component | Upstream | SPDX | Notes |
+|-----------|----------|------|-------|
+| (none yet) | | | MVP libs will be added in follow-up PRs |
+
+Model weights are NOT distributed in this git repository. Each model entry in
+manifest.yaml declares its download URL(s), checksum, and license. Runtime
+code downloads weights into a local cache directory.
