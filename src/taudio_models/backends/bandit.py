@@ -116,6 +116,13 @@ def separate_file(
     if not input_path.is_file():
         raise FileNotFoundError("input audio not found: %s" % input_path)
 
+    if lib_path is None:
+        env_root = os.environ.get("TAUDIO_MODELS_ROOT")
+        if env_root:
+            candidate = Path(env_root) / "libs" / "banditv"
+            if candidate.is_dir():
+                lib_path = candidate
+
     model_code = str(params.get("m") or params.get("model") or "db48")
     if model_code not in MODEL_LOOKUP:
         raise ValueError("unknown bandit model code: %s" % model_code)
@@ -169,10 +176,10 @@ def separate_file(
 
     def _mmap_load(*args, **kwargs):
         kwargs.setdefault("map_location", "cpu")
-        if "mmap" not in kwargs:
+        if "mmap" not in kwargs and args and isinstance(args[0], (str, Path)):
             try:
                 return _orig(*args, mmap=True, **kwargs)
-            except TypeError:
+            except (TypeError, ValueError):
                 pass
         return _orig(*args, **kwargs)
 
