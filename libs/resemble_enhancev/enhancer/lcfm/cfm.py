@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Protocol
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import torch
@@ -80,6 +79,8 @@ class Solver:
     def _maybe_camera_snap(self, *, ψt, t):
         camera = self._camera
         if camera is not None:
+            import matplotlib.pyplot as plt
+
             if ψt.shape[1] == 1:
                 # Waveform, b 1 t, plot every 100 samples
                 plt.subplot(211)

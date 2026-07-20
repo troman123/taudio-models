@@ -1,7 +1,6 @@
 import logging
 from enum import Enum
 
-import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from torch import Tensor, nn
@@ -68,6 +67,8 @@ class LCFM(nn.Module):
         loop = self.get_running_train_loop()
         if loop is None:
             return
+
+        import matplotlib.pyplot as plt
 
         plt.subplot(221)
         plt.imshow(y[0].detach().cpu().numpy(), aspect="auto", origin="lower", interpolation="none")

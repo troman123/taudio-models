@@ -1,7 +1,5 @@
 import logging
 
-import matplotlib.pyplot as plt
-import pandas as pd
 import torch
 from torch import Tensor, nn
 from torch.distributions import Beta
@@ -10,7 +8,6 @@ from ..common import Normalizer
 from ..denoiser.inference import load_denoiser
 from ..melspec import MelSpectrogram
 from ..utils.distributed import global_leader_only
-from ..utils.train_loop import TrainLoop
 from .hparams import HParams
 from .lcfm import CFM, IRMAE, LCFM
 from .univnet import UnivNet
@@ -72,8 +69,9 @@ class Enhancer(nn.Module):
             pretrained_path = self.hp.enhancer_stage1_run_dir / "ds/G/default/mp_rank_00_model_states.pt"
             self._load_pretrained(pretrained_path)
 
-        logger.info(f"{self.__class__.__name__} summary")
-        logger.info(f"{self.summarize()}")
+        # Avoid pandas/markdown summary allocation during inference on tiny hosts.
+        if logger.isEnabledFor(logging.INFO):
+            logger.info("%s constructed", self.__class__.__name__)
 
     def _load_pretrained(self, path):
         # Clone is necessary as otherwise it holds a reference to the original model
@@ -92,8 +90,14 @@ class Enhancer(nn.Module):
         for name, module in self.named_children():
             rows.append(dict(name=name, trainable=npa_train(module), total=npa(module)))
         rows.append(dict(name="total", trainable=npa_train(self), total=npa(self)))
-        df = pd.DataFrame(rows)
-        return df.to_markdown(index=False)
+        try:
+            import pandas as pd
+
+            return pd.DataFrame(rows).to_markdown(index=False)
+        except Exception:  # noqa: BLE001
+            return "\n".join(
+                "%s trainable=%s total=%s" % (r["name"], r["trainable"], r["total"]) for r in rows
+            )
 
     def to_mel(self, x: Tensor, drop_last=True):
         """
@@ -109,6 +113,13 @@ class Enhancer(nn.Module):
     @global_leader_only
     @torch.no_grad()
     def _visualize(self, original_mel, denoised_mel):
+        # Training-only viz; keep optional deps lazy so inference stays import-light.
+        try:
+            from ..utils.train_loop import TrainLoop
+            import matplotlib.pyplot as plt
+        except Exception:  # noqa: BLE001
+            return
+
         loop = TrainLoop.get_running_loop()
         if loop is None or loop.global_step % 100 != 0:
             return

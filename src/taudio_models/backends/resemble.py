@@ -69,12 +69,21 @@ def enhance_file(
     tau = float(params.get("tau", 0.5))
     nfe = int(params.get("nfe", 64))
     solver = str(params.get("sl", params.get("solver", "midpoint")))
+    chunk_seconds = float(params.get("chunk_seconds", 30.0))
+    overlap_seconds = float(params.get("overlap_seconds", 1.0))
 
     dwav, sr = torchaudio.load(str(input_path))
     dwav = dwav.mean(dim=0)
     run_dir_s = str(run_dir) if run_dir is not None else None
     if denoise_only:
-        hwav, out_sr = denoise(dwav, int(sr), device, run_dir=run_dir_s)
+        hwav, out_sr = denoise(
+            dwav,
+            int(sr),
+            device,
+            run_dir=run_dir_s,
+            chunk_seconds=chunk_seconds,
+            overlap_seconds=overlap_seconds,
+        )
     else:
         hwav, out_sr = enhance(
             dwav,
@@ -85,6 +94,8 @@ def enhance_file(
             lambd=lambd,
             tau=tau,
             run_dir=run_dir_s,
+            chunk_seconds=chunk_seconds,
+            overlap_seconds=overlap_seconds,
         )
 
     md5 = hashlib.md5(str(input_path.resolve()).encode("utf-8")).hexdigest()
