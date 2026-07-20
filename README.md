@@ -4,9 +4,19 @@ Open-source **model layer** for audio AI: catalog, versions, `ModelParams` schem
 
 License: [MPL-2.0](LICENSE). See [NOTICE](NOTICE).
 
-## How to use
+## Ways to use (all supported)
 
-### Option A — pip (local Python ≥ 3.10)
+| Method | When to use | Entry |
+|--------|-------------|--------|
+| **Local pip** | You have Python ≥ 3.10 and want CLI / library on the host | `pip install -e ".[denoise]"` |
+| **Docker** | Keep host Python untouched; same denoise flow in a container | `docker compose build` + `run` |
+| **Python API** | Embed in your own code (after pip install, or inside the image) | `open_capability_registry()` |
+
+Pick whichever fits; capabilities and asset ids are the same in all three.
+
+---
+
+### 1) Local install (pip)
 
 ```bash
 git clone https://github.com/troman123/taudio-models.git
@@ -14,50 +24,63 @@ cd taudio-models
 python -m pip install -e ".[denoise]"
 
 export TAUDIO_MODELS_ROOT="$PWD"
+# optional: export TAUDIO_MODEL_CACHE="$HOME/.cache/taudio-models/models"
+
 taudio-models-denoise noisy.wav -o out/
+taudio-models-denoise noisy.wav -o out/ --asset deepfilternet2
+
+taudio-models-fetch --list-assets
+taudio-models-fetch --list-capabilities
 ```
 
-### Option B — Docker (recommended if you don't want to touch host Python)
+Requires: Python ≥ 3.10. Extra `[denoise]` pulls the published `deepfilternet` package; weights download at runtime (not in git).
 
-Files in-repo: [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml).
+---
+
+### 2) Docker
+
+In-repo files: [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml), [`scripts/docker_smoke.sh`](scripts/docker_smoke.sh).
 
 ```bash
 git clone https://github.com/troman123/taudio-models.git
 cd taudio-models
 
-# build image once (uses published python:3.10-slim-bookworm + pip deepfilternet)
 docker compose build
 
-# self-check (synthetic audio, no input file needed)
+# self-check (synthetic audio)
 docker compose run --rm smoke
 
 # denoise your file
 cp /path/to/noisy.wav data/in/
 docker compose run --rm denoise /data/in/noisy.wav -o /data/out
-# outputs land in ./data/out ; model cache in Docker volume taudio-model-cache
+# results: ./data/out
+# model cache: Docker volume taudio-model-cache
 ```
 
-Weights download at runtime into the cache volume (never committed to git).
+Same CLI as local (`taudio-models-denoise`); base image is published `python:3.10-slim-bookworm`.
 
-### Python API
+---
+
+### 3) Python API
+
+Works after **local pip**, or from a shell inside the **Docker** image (`docker compose run --rm --entrypoint bash denoise`).
 
 ```python
+import os
 from taudio_models import open_capability_registry
 
-caps = open_capability_registry()  # needs TAUDIO_MODELS_ROOT or cwd with manifest.yaml
+# Point at the repo root that contains manifest.yaml
+os.environ.setdefault("TAUDIO_MODELS_ROOT", "/path/to/taudio-models")
+
+caps = open_capability_registry()
 caps.run_file("denoise.speech", "noisy.wav", "out/")
+# optional: asset_id="deepfilternet2"
 ```
 
-### Query
-
-```bash
-taudio-models-fetch --list-assets
-taudio-models-fetch --list-capabilities
-taudio-models-fetch --list-catalog
-```
-
-Public names: `denoise.speech`, `deepfilternet3`.  
+Public names: `denoise.speech`, `deepfilternet3` (etc.).  
 Product short names (`dn.speech`, `de3`) stay in closed TaudioProcess.
+
+---
 
 ## What is (and is not) in git
 
@@ -67,6 +90,4 @@ Product short names (`dn.speech`, `de3`) stay in closed TaudioProcess.
 | Dockerfile + compose.yaml | Engine / product pipeline |
 | Packaging + registries | Proprietary SDKs |
 
-Cache: `$TAUDIO_MODEL_CACHE` or `~/.cache/taudio-models/models` (pip); Docker volume `taudio-model-cache` (compose).
-
-See [docs/api.md](docs/api.md), [docs/registries.md](docs/registries.md).
+See [docs/api.md](docs/api.md), [docs/registries.md](docs/registries.md), [docs/usage.md](docs/usage.md).
