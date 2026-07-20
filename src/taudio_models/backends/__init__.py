@@ -4,6 +4,10 @@
 
 """Model backends (open libs glue)."""
 
-from taudio_models.backends.deepfilter import enhance_file, ensure_upstream_weights
+from taudio_models.backends.deepfilter import (
+    enhance_array,
+    enhance_file,
+    ensure_upstream_weights,
+)
 
-__all__ = ["enhance_file", "ensure_upstream_weights"]
+__all__ = ["enhance_array", "enhance_file", "ensure_upstream_weights"]

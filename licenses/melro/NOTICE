@@ -1,0 +1,5 @@
+MelBand RoFormer model code in libs/MelBandRoformer/mel_band_roformer/ is vendored
+and adapted from community Mel-Band-Roformer / lucidrains-style open implementations
+used for vocal/instrumental separation inference.
+
+Weights (e.g. MelBandRoformer.ckpt) are NOT included in this repository.

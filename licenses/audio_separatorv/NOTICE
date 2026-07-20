@@ -1,0 +1,6 @@
+Audio Separator (python-audio-separator)
+Upstream: https://github.com/nomadkaraoke/python-audio-separator
+License: MIT (verify upstream LICENSE before redistribution)
+
+This repository wires the pip package via taudio_models.backends.audio_separator.
+Full vendored libs/audio_separatorv is optional; not shipped in git by default.

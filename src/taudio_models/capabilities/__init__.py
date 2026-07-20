@@ -5,3 +5,5 @@
 """Built-in public capabilities (import for registration side effects)."""
 
 from taudio_models.capabilities import denoise_speech as _denoise_speech  # noqa: F401
+from taudio_models.capabilities import separate_karaoke as _separate_karaoke  # noqa: F401
+from taudio_models.capabilities import separate_vocal as _separate_vocal  # noqa: F401

@@ -15,9 +15,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Speech denoise runtime (published DeepFilterNet + I/O)
+# Speech denoise runtime (vendored libs/DeepFilterNet + published fallback)
+# torch is required by df.enhance_call; pin CPU-friendly range for ECS images.
 denoise = [
+  "torch>=2.0",
   "deepfilternet>=0.5.6",
+  "soundfile>=0.12",
+]
+separate = [
+  "audio-separator>=0.41",
   "soundfile>=0.12",
 ]
 dev = ["pytest>=7.0"]

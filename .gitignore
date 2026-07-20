@@ -16,10 +16,19 @@ data/in/*
 data/out/*
 !data/out/.gitkeep
 
-# Vendored native trees (optional local only; do not commit binaries)
+# Vendored native trees: keep source/glue; never commit weights/binaries
 libs/**/*
 !libs/.gitkeep
 !libs/**/README.md
+!libs/**/NOTICE
+!libs/**/*.py
+!libs/**/*.yaml
+!libs/**/*.yml
+!libs/**/*.md
+!libs/**/*.toml
+!libs/**/*.cfg
+!libs/**/*.json
+!libs/**/py.typed
 
 # Python
 __pycache__/

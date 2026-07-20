@@ -69,21 +69,39 @@ def _assets_from_manifest(manifest: Dict[str, Any]) -> Dict[str, PublicAsset]:
 
 class PublicAssetRegistry:
     """
-    Open-source public asset table.
+    Adapter-layer asset table (public ids).
 
-    Generic stable ids (e.g. deepfilternet3). Does not use internal short names.
+    Runtime aliases (e.g. private short names) may be registered via
+    register_alias — they resolve to public ids before ensure/get.
     """
 
     def __init__(self, models_root: Optional[Path] = None):
         self.root = resolve_models_root(models_root)
         self.manifest = load_manifest(self.root / "manifest.yaml")
         self._assets = _assets_from_manifest(self.manifest)
+        self._aliases: Dict[str, str] = {}
+
+    def register_alias(self, alias_id: str, public_id: str) -> None:
+        """Map a runtime alias onto an existing public asset id."""
+        alias = str(alias_id).strip()
+        public = str(public_id).strip()
+        if not alias or not public:
+            raise ValueError("alias_id and public_id required")
+        if alias == public:
+            raise ValueError("alias_id must differ from public_id (got %s)" % alias)
+        if public not in self._assets:
+            raise KeyError("unknown public asset: %s" % public_id)
+        self._aliases[alias] = public
+
+    def resolve_id(self, asset_id: str) -> str:
+        key = str(asset_id).strip()
+        return self._aliases.get(key, key)
 
     def list_assets(self) -> List[PublicAsset]:
         return [self._assets[k] for k in sorted(self._assets)]
 
     def get(self, asset_id: str) -> PublicAsset:
-        key = str(asset_id).strip()
+        key = self.resolve_id(asset_id)
         if key not in self._assets:
             raise KeyError("unknown public asset: %s" % asset_id)
         return self._assets[key]
@@ -97,14 +115,15 @@ class PublicAssetRegistry:
 
     def ensure(self, asset_id: str) -> Dict[str, Any]:
         """
-        Ensure asset is ready.
+        Ensure asset is ready (aliases resolved first).
 
         For download=upstream (DeepFilterNet): defer to lib's maybe_download_model
         when the backend runs. Returns metadata + lib path.
         For download=urls: use taudio_models.cache.ensure_model on weight_ids.
         """
-        asset = self.get(asset_id)
-        lib_path = self.resolve_lib_path(asset_id)
+        resolved_id = self.resolve_id(asset_id)
+        asset = self.get(resolved_id)
+        lib_path = self.resolve_lib_path(resolved_id)
         weight_paths: Dict[str, Path] = {}
         if asset.download == "urls" and asset.weight_ids:
             from taudio_models.cache import ensure_model
@@ -118,4 +137,6 @@ class PublicAssetRegistry:
             "lib_path": lib_path,
             "weight_paths": weight_paths,
             "upstream_ref": asset.upstream_ref,
+            "requested_asset_id": str(asset_id).strip(),
+            "resolved_asset_id": resolved_id,
         }

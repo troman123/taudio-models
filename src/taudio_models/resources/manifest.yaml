@@ -49,6 +49,28 @@ assets:
     license_file: licenses/deepfilternet/LICENSE
     description: Upstream pretrained DeepFilterNet v3 (default denoise asset)
 
+  melband_vocals:
+    display_name: MelBand RoFormer Vocals
+    lib: libs/MelBandRoformer
+    upstream_ref: MelBandRoformer.ckpt
+    download: manual
+    config_path: configs/config_vocals_mel_band_roformer.yaml
+    license_spdx: MIT
+    license_file: licenses/melro/NOTICE
+    description: Mel-band RoFormer vocal separation (checkpoint manual/cache; not in git)
+
+  audio_separator:
+    display_name: Audio Separator (RoFormer / MDX)
+    lib: libs/audio_separatorv
+    upstream_ref: audio-separator-models
+    download: manual
+    model_store_subdir: audio-separator-models
+    license_spdx: MIT
+    license_file: licenses/audio_separatorv/NOTICE
+    description: >-
+      Karaoke / vocal-inst separation via audio-separator stack;
+      weights manual under cache audio-separator-models/ (rofep, melk2, …)
+
 # ---------------------------------------------------------------------------
 # Public capabilities (generic — NOT internal dn.speech)
 # ---------------------------------------------------------------------------
@@ -58,6 +80,18 @@ capabilities:
     default_asset: deepfilternet3
     kind: denoise
     description: Generic speech denoising via DeepFilterNet family
+
+  separate.vocal:
+    display_name: Vocal separation
+    default_asset: melband_vocals
+    kind: separate
+    description: Vocal / instrumental separation via MelBand RoFormer
+
+  separate.karaoke:
+    display_name: Karaoke / stem separation
+    default_asset: audio_separator
+    kind: separate
+    description: Vocal / instrumental separation via Audio Separator (MDX / RoFormer)
 
 # ---------------------------------------------------------------------------
 # Catalog (legacy ModelRegistry cards; deepfilter wired for MVP)
@@ -74,7 +108,7 @@ catalog:
     license_spdx: TBD
     license_file: licenses/audio_separatorv/LICENSE
     redistributable: true
-    status: planned
+    status: scaffold
     params:
       - name: variant
         type: enum

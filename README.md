@@ -78,7 +78,11 @@ from taudio_models import open_capability_registry
 
 caps = open_capability_registry()  # uses TAUDIO_MODELS_ROOT, cwd checkout, or bundled manifest
 paths = caps.run_file("denoise.speech", "noisy.wav", "out/")
+# PCM trunk (for closed engines / streaming):
+# enhanced, sr = caps.run_array("denoise.speech", audio, sample_rate)
 ```
+
+Closed product engines register extensions onto this adapter and call only through it: [docs/adapter-layer.md](docs/adapter-layer.md).
 
 ---
 
@@ -86,10 +90,11 @@ paths = caps.run_file("denoise.speech", "noisy.wav", "out/")
 
 | Path | Role |
 |------|------|
+| `libs/` | Vendored upstream OSS (primary inference, e.g. DeepFilterNet) |
 | `src/taudio_models/resources/manifest.yaml` | Canonical public catalog / assets / capabilities |
 | `manifest.yaml` | Symlink to the resources file (checkout convenience) |
 | `Dockerfile` / `docker-compose.yml` | Isolated denoise runtime |
 
 Weights and `*.so` are never committed.
 
-See also: [docs/api.md](docs/api.md) · [docs/registries.md](docs/registries.md) · [docs/model-cache.md](docs/model-cache.md)
+See also: [docs/adapter-layer.md](docs/adapter-layer.md) · [docs/api.md](docs/api.md) · [docs/registries.md](docs/registries.md) · [docs/model-cache.md](docs/model-cache.md)

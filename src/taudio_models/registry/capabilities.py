@@ -24,7 +24,12 @@ def register_capability(
     [Callable[["PublicCapabilityRegistry"], "PublicCapability"]],
     Callable[["PublicCapabilityRegistry"], "PublicCapability"],
 ]:
-    """Open hook: register a public capability factory."""
+    """
+    Register a capability factory onto the adapter layer.
+
+    Used by open built-ins and by private extensions at import/runtime.
+    Factories are applied when PublicCapabilityRegistry is constructed.
+    """
 
     def deco(
         factory: Callable[["PublicCapabilityRegistry"], "PublicCapability"],
@@ -38,9 +43,13 @@ def register_capability(
 @dataclass
 class PublicCapability:
     """
-    Generic public capability (not product names).
+    One adapter-layer capability (unified call surface).
 
-    Example id: denoise.speech
+    Example ids: denoise.speech (open), dn.speech (private, runtime-registered).
+
+    Thin runners — forward to backends/libs or compose other capabilities:
+      run_file  — path in / path out
+      run_array — PCM trunk in / PCM trunk out
     """
 
     id: str
@@ -48,8 +57,10 @@ class PublicCapability:
     default_asset_id: str
     description: str = ""
     kind: str = ""
-    # Optional thin runner: (input_path, output_dir, asset_ensure_result, params) -> list[Path]
+    # (input_path, output_dir, asset_ensure, params) -> list[Path]
     run_file: Optional[Callable[..., List[Path]]] = None
+    # (audio, sample_rate, asset_ensure, params) -> (audio_out, sample_rate)
+    run_array: Optional[Callable[..., Any]] = None
     meta: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -60,6 +71,7 @@ class PublicCapability:
             "description": self.description,
             "kind": self.kind,
             "has_run_file": self.run_file is not None,
+            "has_run_array": self.run_array is not None,
             "meta": dict(self.meta),
         }
 
@@ -73,9 +85,11 @@ class ResolvedPublicCapability:
 
 class PublicCapabilityRegistry:
     """
-    Open-source public capability hooks.
+    Adapter layer: sole call entry for capabilities.
 
-    Register / list / get / resolve. Product short names live in TaudioProcess.
+    Open built-ins load from code + manifest. Private extensions register via
+    register_capability before open_capability_registry() / open_adapter().
+    Callers use run_file / run_array only — never bypass to libs.
     """
 
     def __init__(self, models_root: Optional[Path] = None):
@@ -147,6 +161,9 @@ class PublicCapabilityRegistry:
             params=dict(params or {}),
         )
 
+    def has(self, capability_id: str) -> bool:
+        return str(capability_id).strip() in self._caps
+
     def run_file(
         self,
         capability_id: str,
@@ -156,17 +173,12 @@ class PublicCapabilityRegistry:
         asset_id: Optional[str] = None,
         params: Optional[Dict[str, Any]] = None,
     ) -> List[Path]:
-        """
-        Thin public runner when capability provides run_file.
-
-        Full product I/O / pipeline still belongs in TaudioProcess.
-        """
+        """Adapter entry: run a registered capability on a file."""
         resolved = self.resolve(capability_id, asset_id=asset_id, params=params)
         runner = resolved.capability.run_file
         if runner is None:
             raise NotImplementedError(
-                "public capability %s has no run_file; wire it in taudio_models.capabilities"
-                % capability_id
+                "capability %s has no run_file" % capability_id
             )
         return runner(
             Path(input_path),
@@ -174,6 +186,24 @@ class PublicCapabilityRegistry:
             resolved.asset_ensure,
             resolved.params,
         )
+
+    def run_array(
+        self,
+        capability_id: str,
+        audio: Any,
+        sample_rate: int,
+        *,
+        asset_id: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Any:
+        """Adapter entry: run a registered capability on a PCM trunk."""
+        resolved = self.resolve(capability_id, asset_id=asset_id, params=params)
+        runner = resolved.capability.run_array
+        if runner is None:
+            raise NotImplementedError(
+                "capability %s has no run_array; use run_file for path I/O" % capability_id
+            )
+        return runner(audio, int(sample_rate), resolved.asset_ensure, resolved.params)
 
 
 def open_capability_registry(models_root: Optional[Path] = None) -> PublicCapabilityRegistry:
