@@ -110,6 +110,35 @@ def _install_runtime_stubs() -> None:
             sys.modules["omegaconf"] = omegaconf
 
 
+def _alias_demucsv_as_demucs() -> None:
+    """Checkpoint pickles reference ``demucs.*``; vendored tree is ``demucsv``."""
+    import sys
+
+    import demucsv  # type: ignore
+    import demucsv.hdemucs  # type: ignore
+
+    sys.modules.setdefault("demucs", demucsv)
+    sys.modules.setdefault("demucs.hdemucs", demucsv.hdemucs)
+    # Common transitive imports used by apply/states during unpickle/load.
+    for sub in (
+        "states",
+        "apply",
+        "spec",
+        "transformer",
+        "htdemucs",
+        "wdemucs",
+        "pretrained",
+        "repo",
+        "utils",
+        "audio",
+    ):
+        try:
+            mod = __import__("demucsv.%s" % sub, fromlist=[sub])
+        except ImportError:
+            continue
+        sys.modules.setdefault("demucs.%s" % sub, mod)
+
+
 def ensure_demucs_import(lib_path: Optional[Path] = None) -> Any:
     """Import Separator; prefer vendored demucsv when lib_path is set."""
     import sys
@@ -125,6 +154,7 @@ def ensure_demucs_import(lib_path: Optional[Path] = None) -> Any:
                 sys.path.insert(0, parent)
     demucsv_err = None
     try:
+        _alias_demucsv_as_demucs()
         from demucsv.api import Separator  # type: ignore
 
         return Separator
