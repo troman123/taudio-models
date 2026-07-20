@@ -239,9 +239,50 @@ def separate_stems_array(
     filterdb = bool(params.get("filterdb", True))
 
     Separator = ensure_demucs_import(lib_path)
-    separator = Separator(model=model_name)
-    lr = _as_ct(audio)
+    shifts = int(params.get("shifts", 0) or 0)
+    jobs = int(params.get("jobs", 1) or 1)
+    split = str(params.get("split", True)).strip().lower() not in (
+        "0",
+        "false",
+        "False",
+        "",
+    )
+    segment = params.get("segment")
+    if segment is not None and str(segment).strip() != "":
+        segment = int(segment)
+    else:
+        segment = None
+    overlap = float(params.get("overlap", 0.25) or 0.25)
     device = "cuda" if (is_gpu and torch.cuda.is_available()) else "cpu"
+
+    # Peak RAM is dominated by checkpoint unpickle; prefer mmap when available.
+    _orig_torch_load = torch.load
+
+    def _torch_load_mmap(*args, **kwargs):
+        kwargs.setdefault("map_location", "cpu")
+        if "mmap" not in kwargs:
+            try:
+                return _orig_torch_load(*args, mmap=True, **kwargs)
+            except TypeError:
+                pass
+        return _orig_torch_load(*args, **kwargs)
+
+    torch.load = _torch_load_mmap  # type: ignore[assignment]
+    try:
+        separator = Separator(
+            model=model_name,
+            device=device,
+            shifts=shifts,
+            split=split,
+            segment=segment,
+            overlap=overlap,
+            jobs=jobs,
+            progress=bool(params.get("progress", False)),
+        )
+    finally:
+        torch.load = _orig_torch_load  # type: ignore[assignment]
+
+    lr = _as_ct(audio)
     wav = torch.from_numpy(lr)
     if device == "cuda":
         wav = wav.cuda()
