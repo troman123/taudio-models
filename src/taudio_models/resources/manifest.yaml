@@ -89,6 +89,17 @@ assets:
     license_file: licenses/hpss/NOTICE
     description: Harmonic/percussive separation via librosa (no checkpoint)
 
+  bandit:
+    display_name: Bandit (DnR)
+    lib: libs/banditv
+    upstream_ref: dnr-3s-bark48-l1snr
+    download: urls
+    license_spdx: Apache-2.0
+    license_file: licenses/bandit/LICENSE
+    description: >-
+      Cinematic stem separation (speech/music/effects);
+      weights via Zenodo / TAUDIO_BANDIT_DIR (db48/db64)
+
 # ---------------------------------------------------------------------------
 # Public capabilities (generic — NOT internal dn.speech)
 # ---------------------------------------------------------------------------
@@ -122,6 +133,12 @@ capabilities:
     default_asset: hpss
     kind: separate
     description: Harmonic/percussive separation (hpiv)
+
+  separate.bandit:
+    display_name: Bandit cinematic stems
+    default_asset: bandit
+    kind: separate
+    description: Bandit speech/music/effects (bdiv)
 
 # ---------------------------------------------------------------------------
 # Catalog (legacy ModelRegistry cards; deepfilter wired for MVP)
