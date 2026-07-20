@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "taudio-models"
-version = "0.3.0"
+version = "0.3.1"
 description = "Open-source audio model layer: catalog, versions, download/cache, load (no engine/pipeline)"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,10 +15,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+denoise = [
+  "deepfilternet>=0.5.6",
+  "soundfile>=0.12",
+]
 dev = ["pytest>=7.0"]
 
 [project.scripts]
 taudio-models-fetch = "taudio_models.cli:main"
+taudio-models-denoise = "taudio_models.denoise_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

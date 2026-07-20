@@ -56,4 +56,4 @@ __all__ = [
     "repo_root_from",
 ]
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"

@@ -1,64 +1,72 @@
 # taudio-models
 
-Open-source **model layer** for audio AI: catalog, versions, `ModelParams` schemas, weight **download/cache**, and **load** handles.
+Open-source **model layer** for audio AI: catalog, versions, `ModelParams` schemas, weight **download/cache**, load handles, and public capability hooks.
 
-The **engine layer** (how to process a file / PCM frame / bytes) lives in the private local project **TaudioProcess** and is not open-sourced.
+License: [MPL-2.0](LICENSE). See [NOTICE](NOTICE).
 
-License for packaging code: [MPL-2.0](LICENSE). See [NOTICE](NOTICE).
+## How to use
 
-Modifications to this project's source files must remain under MPL-2.0.
-Closed products may use the package as a Larger Work; keep attribution.
+### Option A — pip (local Python ≥ 3.10)
+
+```bash
+git clone https://github.com/troman123/taudio-models.git
+cd taudio-models
+python -m pip install -e ".[denoise]"
+
+export TAUDIO_MODELS_ROOT="$PWD"
+taudio-models-denoise noisy.wav -o out/
+```
+
+### Option B — Docker (recommended if you don't want to touch host Python)
+
+Files in-repo: [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml).
+
+```bash
+git clone https://github.com/troman123/taudio-models.git
+cd taudio-models
+
+# build image once (uses published python:3.10-slim-bookworm + pip deepfilternet)
+docker compose build
+
+# self-check (synthetic audio, no input file needed)
+docker compose run --rm smoke
+
+# denoise your file
+cp /path/to/noisy.wav data/in/
+docker compose run --rm denoise /data/in/noisy.wav -o /data/out
+# outputs land in ./data/out ; model cache in Docker volume taudio-model-cache
+```
+
+Weights download at runtime into the cache volume (never committed to git).
+
+### Python API
+
+```python
+from taudio_models import open_capability_registry
+
+caps = open_capability_registry()  # needs TAUDIO_MODELS_ROOT or cwd with manifest.yaml
+caps.run_file("denoise.speech", "noisy.wav", "out/")
+```
+
+### Query
+
+```bash
+taudio-models-fetch --list-assets
+taudio-models-fetch --list-capabilities
+taudio-models-fetch --list-catalog
+```
+
+Public names: `denoise.speech`, `deepfilternet3`.  
+Product short names (`dn.speech`, `de3`) stay in closed TaudioProcess.
 
 ## What is (and is not) in git
 
 | In git | Not in git |
 |--------|------------|
-| Model catalog + param schemas (`manifest.yaml`) | Weight binaries |
-| Download/cache + `Model.load()` API | Engine / pipeline / file-or-frame I/O |
-| Future `libs/` model implementations | Proprietary SDKs |
+| Catalog / assets / capability schemas | Weight binaries |
+| Dockerfile + compose.yaml | Engine / product pipeline |
+| Packaging + registries | Proprietary SDKs |
 
-## Install
+Cache: `$TAUDIO_MODEL_CACHE` or `~/.cache/taudio-models/models` (pip); Docker volume `taudio-model-cache` (compose).
 
-```bash
-git clone https://github.com/troman123/taudio-models.git
-cd taudio-models
-python -m pip install -e .
-```
-
-## Query + load
-
-```bash
-export TAUDIO_MODELS_ROOT=/path/to/taudio-models
-taudio-models-fetch --list-assets
-taudio-models-fetch --list-capabilities
-taudio-models-fetch --list-catalog
-taudio-models-fetch --list           # weights: with urls (DF uses upstream)
-```
-
-```python
-from taudio_models import open_registry, open_capability_registry
-
-reg = open_registry()
-print([m.to_dict() for m in reg.list_models()])
-
-caps = open_capability_registry()
-print([c.id for c in caps.list_capabilities()])  # denoise.speech
-```
-
-Public names are generic (`deepfilternet3`, `denoise.speech`). Internal short names
-(`de3`, `dn.speech`) live only in closed TaudioProcess — see [docs/registries.md](docs/registries.md).
-
-### DeepFilterNet (denoise MVP)
-
-```bash
-./scripts/vendor_deepfilternet.sh /path/to/DeepFilterNet   # on a machine with space
-# then provide platform libdf / pip wheel before inference
-```
-
-Cache: `$TAUDIO_MODEL_CACHE` or `~/.cache/taudio-models/models`.
-
-See [docs/api.md](docs/api.md) and [docs/model-cache.md](docs/model-cache.md).
-
-## Cloud Agents
-
-Work only on this GitHub repo. Follow [AGENTS.md](AGENTS.md). Do not add process/file pipeline APIs here.
+See [docs/api.md](docs/api.md), [docs/registries.md](docs/registries.md).
