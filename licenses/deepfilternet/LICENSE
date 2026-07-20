@@ -1,0 +1,5 @@
+DeepFilterNet is dual-licensed under Apache-2.0 OR MIT (upstream choice).
+
+See: https://github.com/Rikorose/DeepFilterNet
+
+Place the full upstream LICENSE text here when vendoring via scripts/vendor_deepfilternet.sh.

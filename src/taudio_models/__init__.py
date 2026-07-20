@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """taudio-models: open-source model layer (structure, version, download, load)."""
 
 from taudio_models.api import (
@@ -16,6 +20,15 @@ from taudio_models.api import (
 )
 from taudio_models.cache import cache_root, ensure_model
 from taudio_models.manifest import load_manifest, repo_root_from
+from taudio_models.registry import (
+    PublicAsset,
+    PublicAssetRegistry,
+    PublicCapability,
+    PublicCapabilityRegistry,
+    ResolvedPublicCapability,
+    open_capability_registry,
+    register_capability,
+)
 
 __all__ = [
     "Capability",
@@ -27,13 +40,20 @@ __all__ = [
     "ModelRegistry",
     "ModelStatus",
     "ParamType",
+    "PublicAsset",
+    "PublicAssetRegistry",
+    "PublicCapability",
+    "PublicCapabilityRegistry",
+    "ResolvedPublicCapability",
     "StemKind",
     "cache_root",
     "ensure_model",
     "load_manifest",
+    "open_capability_registry",
     "open_registry",
+    "register_capability",
     "register_model",
     "repo_root_from",
 ]
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

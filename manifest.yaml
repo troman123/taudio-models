@@ -1,8 +1,9 @@
 # taudio-models manifest
-# Weights NEVER in git. Models expose a unified ModelParams schema for TaudioProcess.
-schema_version: 2
+# Weights NEVER in git.
+# Dual registry: public assets + public capabilities (generic names).
+# Internal short names live only in closed TaudioProcess.
+schema_version: 3
 
-# Shared param fragments referenced by catalog (optional DRY).
 param_presets:
   device:
     name: device
@@ -16,6 +17,50 @@ param_presets:
     default: true
     description: Prefer GPU when available
 
+# ---------------------------------------------------------------------------
+# Public assets (generic stable ids — NOT internal de2/de3)
+# ---------------------------------------------------------------------------
+assets:
+  deepfilternet:
+    display_name: DeepFilterNet
+    lib: libs/DeepFilterNet
+    upstream_ref: DeepFilterNet
+    download: upstream
+    license_spdx: Apache-2.0 OR MIT
+    license_file: licenses/deepfilternet/LICENSE
+    description: Upstream pretrained DeepFilterNet v1
+
+  deepfilternet2:
+    display_name: DeepFilterNet2
+    lib: libs/DeepFilterNet
+    upstream_ref: DeepFilterNet2
+    download: upstream
+    license_spdx: Apache-2.0 OR MIT
+    license_file: licenses/deepfilternet/LICENSE
+    description: Upstream pretrained DeepFilterNet v2
+
+  deepfilternet3:
+    display_name: DeepFilterNet3
+    lib: libs/DeepFilterNet
+    upstream_ref: DeepFilterNet3
+    download: upstream
+    license_spdx: Apache-2.0 OR MIT
+    license_file: licenses/deepfilternet/LICENSE
+    description: Upstream pretrained DeepFilterNet v3 (default denoise asset)
+
+# ---------------------------------------------------------------------------
+# Public capabilities (generic — NOT internal dn.speech)
+# ---------------------------------------------------------------------------
+capabilities:
+  denoise.speech:
+    display_name: Speech denoise
+    default_asset: deepfilternet3
+    kind: denoise
+    description: Generic speech denoising via DeepFilterNet family
+
+# ---------------------------------------------------------------------------
+# Catalog (legacy ModelRegistry cards; deepfilter wired for MVP)
+# ---------------------------------------------------------------------------
 catalog:
   ause:
     display_name: Audio Separator (RoFormer / MDX)
@@ -34,25 +79,20 @@ catalog:
         type: enum
         default: vocal
         choices: [vocal, vocallead, vocalback, instrumental, iv]
-        description: Which stem mapping to produce (aligns with ausev/ausevl/...)
       - name: model_weight
         type: enum
         default: rofep
         choices: [rofep, melk2, rofk2, rofk1]
-        description: "Weight alias resolved via models section when registered"
       - name: split
         type: bool
         default: false
-        description: Split long audio before separation (sp=1)
       - name: device
         type: enum
         default: auto
         choices: [auto, cpu, cuda, mps]
-        description: Inference device
       - name: is_gpu
         type: bool
         default: true
-        description: Prefer GPU when available
 
   melro:
     display_name: MelBand RoFormer
@@ -71,7 +111,6 @@ catalog:
         type: enum
         default: vocal
         choices: [vocal, instrumental, iv]
-        description: Output selection
       - name: device
         type: enum
         default: auto
@@ -103,29 +142,34 @@ catalog:
 
   deepfilter:
     display_name: DeepFilterNet
-    description: Speech denoise / enhancement
+    description: Speech denoise / enhancement (catalog bridge to public assets)
     lib: libs/DeepFilterNet
-    aliases: [de, de2, de3, dede, dede2]
-    requires_models: []
+    aliases: []
+    weight_ids: []
     capabilities: [denoise, enhance]
     output_stems: [other]
-    license_spdx: TBD
+    license_spdx: Apache-2.0 OR MIT
     license_file: licenses/deepfilternet/LICENSE
     redistributable: true
-    status: planned
+    status: available
     params:
       - name: version
         type: enum
         default: "3"
         choices: ["1", "2", "3"]
-        description: DeepFilterNet major version
+        description: DeepFilterNet major version -> public asset deepfilternet{N}
       - name: device
         type: enum
         default: auto
         choices: [auto, cpu, cuda, mps]
       - name: is_gpu
         type: bool
-        default: true
+        default: false
+        description: Prefer GPU when available
+      - name: pf
+        type: bool
+        default: false
+        description: Enable DeepFilterNet post-filter
 
-# Downloadable weight files (never committed to git)
+# Downloadable weight files via urls (empty for DF — uses upstream download)
 weights: {}

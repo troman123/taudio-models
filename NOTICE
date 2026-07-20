@@ -2,15 +2,23 @@ taudio-models
 =============
 
 Open-source audio **model layer**: catalog, versions, parameter schemas,
-weight download/cache, and load handles.
+weight download/cache, load handles, public asset/capability registries.
 
-Umbrella license for original packaging code: MIT (see LICENSE).
+Umbrella license for original packaging code: **MPL-2.0** (see LICENSE).
+
+File-level copyleft: modifications to Covered Software source files must
+remain under MPL-2.0. Independent new files and larger closed works that
+only *use* this package (e.g. a private engine) are not required to be
+open-sourced solely because of that use — see MPL-2.0 §3.3 Larger Work.
+
+Attribution: keep copyright and license notices; cite this project when
+you redistribute or publish modifications of Covered Software.
 
 Third-party components
 ----------------------
 
 | Component | Upstream | SPDX | Notes |
 |-----------|----------|------|-------|
-| (none yet) | | | MVP model libs added in follow-up PRs |
+| DeepFilterNet (when vendored under libs/) | Rikorose/DeepFilterNet | Apache-2.0 OR MIT | See licenses/deepfilternet/; not re-licensed as MPL |
 
-Weights are NOT in this git repository. See manifest.yaml `weights:` entries.
+Weights are NOT in this git repository. See manifest.yaml `assets` / `weights`.

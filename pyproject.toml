@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "taudio-models"
-version = "0.2.0"
+version = "0.3.0"
 description = "Open-source audio model layer: catalog, versions, download/cache, load (no engine/pipeline)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "MPL-2.0" }
 authors = [{ name = "taudio-models contributors" }]
 dependencies = [
   "PyYAML>=6.0",

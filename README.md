@@ -4,7 +4,10 @@ Open-source **model layer** for audio AI: catalog, versions, `ModelParams` schem
 
 The **engine layer** (how to process a file / PCM frame / bytes) lives in the private local project **TaudioProcess** and is not open-sourced.
 
-License for packaging code: [MIT](LICENSE). See [NOTICE](NOTICE).
+License for packaging code: [MPL-2.0](LICENSE). See [NOTICE](NOTICE).
+
+Modifications to this project's source files must remain under MPL-2.0.
+Closed products may use the package as a Larger Work; keep attribution.
 
 ## What is (and is not) in git
 
@@ -26,15 +29,30 @@ python -m pip install -e .
 
 ```bash
 export TAUDIO_MODELS_ROOT=/path/to/taudio-models
-taudio-models-fetch --list-engines   # lists catalog models + params
-taudio-models-fetch --list           # lists downloadable weights
+taudio-models-fetch --list-assets
+taudio-models-fetch --list-capabilities
+taudio-models-fetch --list-catalog
+taudio-models-fetch --list           # weights: with urls (DF uses upstream)
 ```
 
 ```python
-from taudio_models import open_registry
+from taudio_models import open_registry, open_capability_registry
+
 reg = open_registry()
 print([m.to_dict() for m in reg.list_models()])
-# loaded = reg.load_model("ause", {"variant": "vocal"})
+
+caps = open_capability_registry()
+print([c.id for c in caps.list_capabilities()])  # denoise.speech
+```
+
+Public names are generic (`deepfilternet3`, `denoise.speech`). Internal short names
+(`de3`, `dn.speech`) live only in closed TaudioProcess — see [docs/registries.md](docs/registries.md).
+
+### DeepFilterNet (denoise MVP)
+
+```bash
+./scripts/vendor_deepfilternet.sh /path/to/DeepFilterNet   # on a machine with space
+# then provide platform libdf / pip wheel before inference
 ```
 
 Cache: `$TAUDIO_MODEL_CACHE` or `~/.cache/taudio-models/models`.

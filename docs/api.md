@@ -1,50 +1,52 @@
-# Fixed API: open-source model layer (taudio-models) vs closed engine layer (TaudioProcess)
+# Open model layer API (taudio-models)
 
 ## Boundary
 
 | Layer | Repo | Responsibility |
 |-------|------|----------------|
-| **Model layer** (open) | `taudio-models` | Model structure, version, `ModelParams` schema, weight download/cache, `load()` handle |
-| **Engine layer** (closed) | `TaudioProcess` only | How to call: file / PCM frame / bytes; orchestration; writing stems |
+| **Public assets + capabilities** | `taudio-models` | Generic ids, download, thin `run_file` hooks, libs |
+| **Internal assets + capabilities + engine** | `TaudioProcess` | Short names, product I/O (`process_file` / array / bytes), pipeline |
 
-Open source must **not** implement `process_file` / pipeline run. That stays private.
+Public ids and internal ids must **never** be the same string. Internal `alias_of` / `extends` public entries.
 
-## Model layer Python API
+## Public registries
 
 ```python
-from pathlib import Path
+from taudio_models import PublicAssetRegistry, open_capability_registry, register_capability
+
+assets = PublicAssetRegistry()
+print([a.id for a in assets.list_assets()])  # deepfilternet3, ...
+
+caps = open_capability_registry()
+print([c.id for c in caps.list_capabilities()])  # denoise.speech
+# caps.run_file("denoise.speech", "in.wav", "out/")  # needs vendored DF + libdf
+```
+
+Register more public capabilities with `@register_capability("something.generic")`.
+
+## Catalog ModelRegistry (still available)
+
+```python
 from taudio_models import open_registry
 
-reg = open_registry(Path("/path/to/taudio-models"))
-
-# query
-for m in reg.list_models(include_planned=True):
-    print(m.id, m.version, m.status.value, [p.name for p in m.params])
-
-info = reg.get_model("ause")   # or alias "ausev"
-
-# download weights (if weight_ids registered) + load handle
-loaded = reg.load_model("ause", {"variant": "vocal", "model_weight": "rofep"})
-# loaded.info / loaded.params / loaded.weight_paths / loaded.backend
+reg = open_registry()
+loaded = reg.load_model("deepfilter", {"version": "3", "is_gpu": False})
+# loaded.backend describes public_capability + public_asset for the engine bridge
 ```
 
 ## Types
 
 | Type | Role |
 |------|------|
-| `ModelInfo` | Queryable card: id, version, capabilities, params, stems |
-| `ModelParam` | One parameter definition |
-| `ModelParams` | Runtime values; `validated(info)` |
-| `Model` | `info()` / `ensure_weights()` / `load()` |
-| `LoadedModel` | Opaque handle for the closed engine layer |
+| `PublicAsset` | Public resource card |
+| `PublicCapability` | Public capability + optional `run_file` |
+| `ModelInfo` / `ModelParams` | Catalog cards |
+| `LoadedModel` | Handle for closed engine |
 
-## Engine layer (TaudioProcess, not in this repo)
+## Engine (closed)
+
+Prefer internal capability ids:
 
 ```python
-# private
-engine.process_file(path, model_id, params)
-engine.process_array(pcm, sr, model_id, params)
-engine.process_bytes(data, model_id, params)
+engine.process_file("noisy.wav", "dn.speech", "out/")
 ```
-
-These call `load_model` then run inference / I/O privately.
