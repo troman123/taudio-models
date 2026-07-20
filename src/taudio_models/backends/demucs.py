@@ -60,7 +60,23 @@ def _install_runtime_stubs() -> None:
             julius.resample_frac = resample_frac
             sys.modules["julius"] = julius
 
-    if "omegaconf" not in sys.modules:
+    if "openunmix" not in sys.modules:
+        try:
+            import openunmix  # noqa: F401
+        except ImportError:
+            openunmix = types.ModuleType("openunmix")
+            filtering = types.ModuleType("openunmix.filtering")
+
+            def wiener(*args, **kwargs):  # noqa: ARG001
+                raise RuntimeError(
+                    "openunmix.filtering.wiener unavailable; install openunmix "
+                    "for Wiener-filtered Demucs bags"
+                )
+
+            filtering.wiener = wiener
+            openunmix.filtering = filtering
+            sys.modules["openunmix"] = openunmix
+            sys.modules["openunmix.filtering"] = filtering
         try:
             import omegaconf  # noqa: F401
         except ImportError:
@@ -89,27 +105,27 @@ def ensure_demucs_import(lib_path: Optional[Path] = None) -> Any:
     if lib_path is not None:
         lib_path = Path(lib_path).resolve()
         if lib_path.is_dir():
+            # libs/ on path so `import demucsv` works; do NOT add demucsv/ itself
+            # (that shadows package name `demucs` with demucsv/demucs.py).
             parent = str(lib_path.parent)
             if parent not in sys.path:
                 sys.path.insert(0, parent)
-            root = str(lib_path)
-            if root not in sys.path:
-                sys.path.insert(0, root)
+    demucsv_err = None
     try:
         from demucsv.api import Separator  # type: ignore
 
         return Separator
-    except ImportError:
-        pass
+    except ImportError as e:
+        demucsv_err = e
     try:
         from demucs.api import Separator  # type: ignore
 
         return Separator
     except ImportError as e:
         raise ImportError(
-            "Demucs not available (%s). Install: pip install demucs "
-            "or vendor libs/demucsv."
-            % e
+            "Demucs not available (demucsv=%s; demucs=%s). "
+            "Vendor libs/demucsv under models root or pip install demucs."
+            % (demucsv_err, e)
         ) from e
 
 
