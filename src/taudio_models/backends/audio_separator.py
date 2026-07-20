@@ -247,6 +247,17 @@ def separate_file(
         ctor_kwargs["force_gpu"] = use_gpu
     elif use_gpu and "use_autocast" in accepted:
         ctor_kwargs["use_autocast"] = True
+    # Generic passthrough: caller may supply Separator kwargs (e.g. mdxc_params).
+    for key in (
+        "mdxc_params",
+        "mdx_params",
+        "vr_params",
+        "demucs_params",
+        "chunk_duration",
+        "sample_rate",
+    ):
+        if key in params and key in accepted:
+            ctor_kwargs[key] = params[key]
     separator = Separator(**ctor_kwargs)
     separator.load_model(model_filename=model_filename)
     output_files = separator.separate(str(input_path))

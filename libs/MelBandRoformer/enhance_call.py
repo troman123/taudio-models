@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import gc
 import hashlib
 import os
 import sys
@@ -21,6 +23,33 @@ warnings.filterwarnings("ignore")
 SelectStem = Literal["vocal", "instrumental", "iv"]
 _DEFAULT_CONFIG = "configs/config_vocals_mel_band_roformer.yaml"
 _MODEL_TYPE = "mel_band_roformer"
+
+
+def _resolve_torch_dtype(dtype: Optional[Union[str, torch.dtype]]) -> Optional[torch.dtype]:
+    """Generic dtype knob: None/fp32 → float32; fp16/half → float16."""
+    if dtype is None:
+        return None
+    if isinstance(dtype, torch.dtype):
+        return dtype
+    key = str(dtype).strip().lower()
+    if key in ("", "fp32", "float32", "float"):
+        return torch.float32
+    if key in ("fp16", "float16", "half"):
+        return torch.float16
+    raise ValueError("unsupported dtype %r (use fp32 or fp16)" % dtype)
+
+
+def _apply_inference_knobs(
+    config: ConfigDict,
+    *,
+    chunk_size: Optional[int] = None,
+    flash_attn: Optional[bool] = None,
+) -> None:
+    """Apply generic inference overrides already present in the yaml schema."""
+    if chunk_size is not None:
+        config.inference.chunk_size = int(chunk_size)
+    if flash_attn is not None:
+        config.model.flash_attn = bool(flash_attn)
 
 
 def ensure_melband_import(lib_path: Optional[Path] = None) -> None:
@@ -63,13 +92,20 @@ def demix_track(config, model, mix, device, first_chunk_time=None):
     step = C // N
     fade_size = C // 10
     border = C - step
+    model_dtype = next(model.parameters()).dtype
 
     if mix.shape[1] > 2 * border and border > 0:
         mix = nn.functional.pad(mix, (border, border), mode="reflect")
 
     windowing_array = get_windowing_array(C, fade_size, device)
 
-    with torch.cuda.amp.autocast():
+    # autocast is CUDA-only; on CPU it only inflates peak RAM.
+    amp_ctx = (
+        torch.cuda.amp.autocast()
+        if device.type == "cuda"
+        else contextlib.nullcontext()
+    )
+    with amp_ctx:
         with torch.no_grad():
             if config.training.target_instrument is not None:
                 req_shape = (1,) + tuple(mix.shape)
@@ -77,8 +113,8 @@ def demix_track(config, model, mix, device, first_chunk_time=None):
                 req_shape = (len(config.training.instruments),) + tuple(mix.shape)
 
             mix = mix.to(device)
-            result = torch.zeros(req_shape, dtype=torch.float32).to(device)
-            counter = torch.zeros(req_shape, dtype=torch.float32).to(device)
+            result = torch.zeros(req_shape, dtype=torch.float32, device=device)
+            counter = torch.zeros(req_shape, dtype=torch.float32, device=device)
 
             i = 0
             total_length = mix.shape[1]
@@ -99,8 +135,12 @@ def demix_track(config, model, mix, device, first_chunk_time=None):
                         part = nn.functional.pad(
                             input=part, pad=(0, C - length, 0, 0), mode="constant", value=0
                         )
+                if model_dtype != torch.float32:
+                    part = part.to(dtype=model_dtype)
 
                 x = model(part.unsqueeze(0))[0]
+                if x.dtype != torch.float32:
+                    x = x.float()
 
                 window = windowing_array.clone()
                 if i == 0:
@@ -146,12 +186,26 @@ def _load_model(
     model_path: Path,
     is_gpu: bool,
     device_ids: Union[int, List[int]] = 0,
+    chunk_size: Optional[int] = None,
+    dtype: Optional[Union[str, torch.dtype]] = None,
+    flash_attn: Optional[bool] = None,
 ):
     torch.backends.cudnn.benchmark = True
     config = _load_config(config_path)
+    _apply_inference_knobs(config, chunk_size=chunk_size, flash_attn=flash_attn)
     model = get_model_from_config(_MODEL_TYPE, config)
     if model_path.is_file():
-        model.load_state_dict(torch.load(str(model_path), map_location=torch.device("cpu")))
+        try:
+            state = torch.load(
+                str(model_path),
+                map_location=torch.device("cpu"),
+                weights_only=True,
+            )
+        except TypeError:
+            state = torch.load(str(model_path), map_location=torch.device("cpu"))
+        model.load_state_dict(state)
+        del state
+        gc.collect()
 
     if not is_gpu:
         device = torch.device("cpu")
@@ -167,8 +221,26 @@ def _load_model(
     else:
         device = torch.device("cpu")
         model = model.to(device)
+
+    resolved = _resolve_torch_dtype(dtype)
+    if resolved is not None and resolved != torch.float32:
+        model = model.to(dtype=resolved)
+        gc.collect()
+
     model.eval()
     return model, config, device
+
+
+def _knobs_from_params(params: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    params = dict(params or {})
+    knobs: Dict[str, Any] = {}
+    if params.get("chunk_size") is not None:
+        knobs["chunk_size"] = int(params["chunk_size"])
+    if params.get("dtype") is not None:
+        knobs["dtype"] = params["dtype"]
+    if params.get("flash_attn") is not None:
+        knobs["flash_attn"] = bool(params["flash_attn"])
+    return knobs
 
 
 def _stem_paths(
@@ -242,14 +314,26 @@ def separate_array(
     is_gpu: bool = False,
     device_ids: Union[int, List[int]] = 0,
     lib_path: Optional[Path] = None,
+    chunk_size: Optional[int] = None,
+    dtype: Optional[Union[str, torch.dtype]] = None,
+    flash_attn: Optional[bool] = None,
+    params: Optional[Dict[str, Any]] = None,
 ) -> Tuple[np.ndarray, int]:
     """Separate in-memory audio; return selected stem waveform."""
     ensure_melband_import(lib_path)
+    knobs = _knobs_from_params(params)
+    if chunk_size is not None:
+        knobs["chunk_size"] = int(chunk_size)
+    if dtype is not None:
+        knobs["dtype"] = dtype
+    if flash_attn is not None:
+        knobs["flash_attn"] = bool(flash_attn)
     model, config, device = _load_model(
         config_path=Path(config_path),
         model_path=Path(model_path),
         is_gpu=is_gpu,
         device_ids=device_ids,
+        **knobs,
     )
 
     mix = np.asarray(audio, dtype=np.float32)
@@ -291,6 +375,10 @@ def separate_file(
     is_gpu: bool = False,
     device_ids: Union[int, List[int]] = 0,
     lib_path: Optional[Path] = None,
+    chunk_size: Optional[int] = None,
+    dtype: Optional[Union[str, torch.dtype]] = None,
+    flash_attn: Optional[bool] = None,
+    params: Optional[Dict[str, Any]] = None,
 ) -> List[Path]:
     """Separate one file; return paths for the requested stem(s)."""
     ensure_melband_import(lib_path)
@@ -298,6 +386,13 @@ def separate_file(
     output_dir = Path(output_dir)
     model_path = Path(model_path)
     config_path = Path(config_path)
+    knobs = _knobs_from_params(params)
+    if chunk_size is not None:
+        knobs["chunk_size"] = int(chunk_size)
+    if dtype is not None:
+        knobs["dtype"] = dtype
+    if flash_attn is not None:
+        knobs["flash_attn"] = bool(flash_attn)
 
     if not config_path.is_file():
         raise FileNotFoundError("config not found: %s" % config_path)
@@ -309,6 +404,7 @@ def separate_file(
         model_path=model_path,
         is_gpu=is_gpu,
         device_ids=device_ids,
+        **knobs,
     )
     return run_folder(
         model,

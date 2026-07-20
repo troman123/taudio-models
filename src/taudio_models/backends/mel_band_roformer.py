@@ -101,6 +101,7 @@ def separate_file(
         is_gpu=use_gpu,
         device_ids=params.get("device_ids", 0),
         lib_path=lib,
+        params=params,
     )
 
 
@@ -157,4 +158,5 @@ def separate_array(
         is_gpu=use_gpu,
         device_ids=params.get("device_ids", 0),
         lib_path=lib,
+        params=params,
     )
