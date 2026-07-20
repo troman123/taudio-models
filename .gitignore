@@ -51,3 +51,4 @@ build/
 # Explicitly track MelBand RoFormer vendor source (weights still ignored via *.ckpt)
 !libs/MelBandRoformer/
 !libs/MelBandRoformer/**
+libs/**/__pycache__/

@@ -71,6 +71,24 @@ assets:
       Karaoke / vocal-inst separation via audio-separator stack;
       weights manual under cache audio-separator-models/ (rofep, melk2, …)
 
+  demucs:
+    display_name: Demucs
+    lib: libs/demucsv
+    upstream_ref: hdemucs_mmi
+    download: upstream
+    license_spdx: MIT
+    license_file: licenses/demucs/NOTICE
+    description: Demucs stem separation (weights via demucs pretrained cache)
+
+  hpss:
+    display_name: HPSS (librosa)
+    lib: libs/hpss
+    upstream_ref: librosa
+    download: none
+    license_spdx: ISC
+    license_file: licenses/hpss/NOTICE
+    description: Harmonic/percussive separation via librosa (no checkpoint)
+
 # ---------------------------------------------------------------------------
 # Public capabilities (generic — NOT internal dn.speech)
 # ---------------------------------------------------------------------------
@@ -92,6 +110,18 @@ capabilities:
     default_asset: audio_separator
     kind: separate
     description: Vocal / instrumental separation via Audio Separator (MDX / RoFormer)
+
+  separate.demucs:
+    display_name: Demucs instrumental filter
+    default_asset: demucs
+    kind: separate
+    description: Demucs mute-vocals / instrumental mix (dmiv)
+
+  separate.hpss:
+    display_name: HPSS
+    default_asset: hpss
+    kind: separate
+    description: Harmonic/percussive separation (hpiv)
 
 # ---------------------------------------------------------------------------
 # Catalog (legacy ModelRegistry cards; deepfilter wired for MVP)
