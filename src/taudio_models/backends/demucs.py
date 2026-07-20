@@ -11,10 +11,62 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 
+def _install_runtime_stubs() -> None:
+    """Provide minimal dora/julius stubs so demucsv inference can import offline."""
+    import sys
+    import types
+
+    if "dora.log" not in sys.modules:
+        dora = types.ModuleType("dora")
+        dora_log = types.ModuleType("dora.log")
+
+        def fatal(*args, **kwargs):  # noqa: ARG001
+            raise RuntimeError(args[0] if args else "fatal")
+
+        def bold(text):
+            return str(text)
+
+        class LogProgress:  # noqa: D401
+            def __init__(self, *args, **kwargs):  # noqa: ARG002
+                pass
+
+            def __iter__(self):
+                return iter(())
+
+            def update(self, *args, **kwargs):  # noqa: ARG002
+                return None
+
+        dora_log.fatal = fatal
+        dora_log.bold = bold
+        dora_log.LogProgress = LogProgress
+        dora.fatal = fatal
+        dora.hydra_main = lambda *a, **k: (lambda fn: fn)
+        sys.modules["dora"] = dora
+        sys.modules["dora.log"] = dora_log
+
+    if "julius" not in sys.modules:
+        try:
+            import julius  # noqa: F401
+        except ImportError:
+            julius = types.ModuleType("julius")
+
+            def resample_frac(wav, from_sr, to_sr):
+                import torch
+                import torchaudio
+
+                if int(from_sr) == int(to_sr):
+                    return wav
+                return torchaudio.functional.resample(wav, int(from_sr), int(to_sr))
+
+            julius.resample_frac = resample_frac
+            sys.modules["julius"] = julius
+
+
 def ensure_demucs_import(lib_path: Optional[Path] = None) -> Any:
     """Import Separator; prefer vendored demucsv when lib_path is set."""
     import sys
 
+    _install_runtime_stubs()
     if lib_path is not None:
         lib_path = Path(lib_path).resolve()
         if lib_path.is_dir():
@@ -40,10 +92,6 @@ def ensure_demucs_import(lib_path: Optional[Path] = None) -> Any:
             "or vendor libs/demucsv."
             % e
         ) from e
-
-
-def _import_separator():
-    return ensure_demucs_import(None)
 
 
 def _as_ct(audio: Any) -> Any:
