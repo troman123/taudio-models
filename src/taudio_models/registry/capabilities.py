@@ -151,10 +151,28 @@ class PublicCapabilityRegistry:
         params: Optional[Dict[str, Any]] = None,
     ) -> ResolvedPublicCapability:
         cap = self.get(capability_id)
-        aid = asset_id or cap.default_asset_id
-        if not aid:
+        aid = (asset_id or cap.default_asset_id or "").strip()
+        meta = dict(cap.meta or {})
+        # Route / orchestration caps may compose other caps and need no asset.
+        allow_no_asset = (
+            not aid
+            or aid in ("_", "none", "-")
+            or cap.kind == "route"
+            or bool(meta.get("no_asset"))
+        )
+        if not aid and not allow_no_asset:
             raise ValueError("capability %s has no default_asset_id" % capability_id)
-        ensured = self.assets.ensure(aid)
+        if not aid or aid in ("_", "none", "-"):
+            ensured: Dict[str, Any] = {
+                "asset": {},
+                "lib_path": None,
+                "weight_paths": {},
+                "upstream_ref": None,
+                "requested_asset_id": aid or "",
+                "resolved_asset_id": "",
+            }
+        else:
+            ensured = self.assets.ensure(aid)
         return ResolvedPublicCapability(
             capability=cap,
             asset_ensure=ensured,
