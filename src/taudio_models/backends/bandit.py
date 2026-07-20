@@ -47,6 +47,26 @@ def _resolve_ckpt(model_dir: Path, model_filename: str) -> Tuple[Path, Path]:
 def ensure_bandit_import(lib_path: Optional[Path] = None) -> Any:
     """Put vendored banditv root on sys.path; return LightningSystem."""
     import sys
+    import types
+
+    # Inference-only stubs for optional training-time deps pulled by core/__init__.
+    # Do NOT stub packages that torch._dynamo may probe (e.g. pandas).
+    import importlib.machinery
+
+    for name in (
+        "pedalboard",
+        "gooptim",
+        "torch_audiomentations",
+        "asteroid_filterbanks",
+        "spafe",
+    ):
+        if name not in sys.modules:
+            try:
+                __import__(name)
+            except ImportError:
+                mod = types.ModuleType(name)
+                mod.__spec__ = importlib.machinery.ModuleSpec(name, None)
+                sys.modules[name] = mod
 
     if lib_path is not None:
         lib_path = Path(lib_path).resolve()
