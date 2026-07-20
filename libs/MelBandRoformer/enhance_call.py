@@ -235,9 +235,15 @@ def _load_model(
         device = torch.device("cpu")
         model = model.to(device)
 
-    if want_fp16 and next(model.parameters()).dtype != torch.float16:
-        model = model.half()
-        gc.collect()
+    if want_fp16:
+        if device.type == "cpu":
+            # Load as fp16 to cut checkpoint peak; CPU lacks Half for some ops
+            # (e.g. reflection_pad1d), so upcast before forward.
+            model = model.float()
+            gc.collect()
+        elif next(model.parameters()).dtype != torch.float16:
+            model = model.half()
+            gc.collect()
 
     model.eval()
     return model, config, device
