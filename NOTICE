@@ -14,6 +14,10 @@ open-sourced solely because of that use — see MPL-2.0 §3.3 Larger Work.
 Attribution: keep copyright and license notices; cite this project when
 you redistribute or publish modifications of Covered Software.
 
+Install / run: local ``pip install 'taudio-models[denoise]'`` and
+``docker compose`` are both supported (see README and docs/usage.md).
+
+
 Third-party components
 ----------------------
 

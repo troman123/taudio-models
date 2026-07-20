@@ -1,0 +1,176 @@
+# taudio-models manifest
+# Weights NEVER in git.
+# Dual registry: public assets + public capabilities (generic names).
+# Internal short names live only in closed TaudioProcess.
+# Canonical manifest (packaged into the wheel). Repo-root manifest.yaml is a symlink here.
+schema_version: 3
+
+param_presets:
+  device:
+    name: device
+    type: enum
+    default: auto
+    choices: [auto, cpu, cuda, mps]
+    description: Inference device
+  is_gpu:
+    name: is_gpu
+    type: bool
+    default: true
+    description: Prefer GPU when available
+
+# ---------------------------------------------------------------------------
+# Public assets (generic stable ids — NOT internal de2/de3)
+# ---------------------------------------------------------------------------
+assets:
+  deepfilternet:
+    display_name: DeepFilterNet
+    lib: libs/DeepFilterNet
+    upstream_ref: DeepFilterNet
+    download: upstream
+    license_spdx: Apache-2.0 OR MIT
+    license_file: licenses/deepfilternet/LICENSE
+    description: Upstream pretrained DeepFilterNet v1
+
+  deepfilternet2:
+    display_name: DeepFilterNet2
+    lib: libs/DeepFilterNet
+    upstream_ref: DeepFilterNet2
+    download: upstream
+    license_spdx: Apache-2.0 OR MIT
+    license_file: licenses/deepfilternet/LICENSE
+    description: Upstream pretrained DeepFilterNet v2
+
+  deepfilternet3:
+    display_name: DeepFilterNet3
+    lib: libs/DeepFilterNet
+    upstream_ref: DeepFilterNet3
+    download: upstream
+    license_spdx: Apache-2.0 OR MIT
+    license_file: licenses/deepfilternet/LICENSE
+    description: Upstream pretrained DeepFilterNet v3 (default denoise asset)
+
+# ---------------------------------------------------------------------------
+# Public capabilities (generic — NOT internal dn.speech)
+# ---------------------------------------------------------------------------
+capabilities:
+  denoise.speech:
+    display_name: Speech denoise
+    default_asset: deepfilternet3
+    kind: denoise
+    description: Generic speech denoising via DeepFilterNet family
+
+# ---------------------------------------------------------------------------
+# Catalog (legacy ModelRegistry cards; deepfilter wired for MVP)
+# ---------------------------------------------------------------------------
+catalog:
+  ause:
+    display_name: Audio Separator (RoFormer / MDX)
+    description: Vocal / instrumental / lead / backing separation via audio-separator stack
+    lib: libs/audio_separatorv
+    aliases: [ausev, ausevl, ausevb, ausei, auseiv]
+    requires_models: []
+    capabilities: [separate_vocals, separate_instrumental, separate_lead, separate_backing]
+    output_stems: [vocals, instrumental, lead, backing]
+    license_spdx: TBD
+    license_file: licenses/audio_separatorv/LICENSE
+    redistributable: true
+    status: planned
+    params:
+      - name: variant
+        type: enum
+        default: vocal
+        choices: [vocal, vocallead, vocalback, instrumental, iv]
+      - name: model_weight
+        type: enum
+        default: rofep
+        choices: [rofep, melk2, rofk2, rofk1]
+      - name: split
+        type: bool
+        default: false
+      - name: device
+        type: enum
+        default: auto
+        choices: [auto, cpu, cuda, mps]
+      - name: is_gpu
+        type: bool
+        default: true
+
+  melro:
+    display_name: MelBand RoFormer
+    description: Mel-band RoFormer vocal / instrumental separation
+    lib: libs/mel_band_roformer
+    aliases: [melrov, melroi, melroiv]
+    requires_models: []
+    capabilities: [separate_vocals, separate_instrumental]
+    output_stems: [vocals, instrumental]
+    license_spdx: TBD
+    license_file: licenses/melro/LICENSE
+    redistributable: true
+    status: planned
+    params:
+      - name: variant
+        type: enum
+        default: vocal
+        choices: [vocal, instrumental, iv]
+      - name: device
+        type: enum
+        default: auto
+        choices: [auto, cpu, cuda, mps]
+      - name: is_gpu
+        type: bool
+        default: true
+
+  demucs:
+    display_name: Demucs
+    description: Demucs instrumental / multi-stem separation
+    lib: libs/demucsv
+    aliases: [dmiv]
+    requires_models: []
+    capabilities: [separate_vocals, separate_instrumental]
+    output_stems: [vocals, instrumental]
+    license_spdx: MIT
+    license_file: licenses/demucs/LICENSE
+    redistributable: true
+    status: planned
+    params:
+      - name: device
+        type: enum
+        default: auto
+        choices: [auto, cpu, cuda, mps]
+      - name: is_gpu
+        type: bool
+        default: true
+
+  deepfilter:
+    display_name: DeepFilterNet
+    description: Speech denoise / enhancement (catalog bridge to public assets)
+    lib: libs/DeepFilterNet
+    aliases: []
+    weight_ids: []
+    capabilities: [denoise, enhance]
+    output_stems: [other]
+    license_spdx: Apache-2.0 OR MIT
+    license_file: licenses/deepfilternet/LICENSE
+    redistributable: true
+    status: available
+    params:
+      - name: version
+        type: enum
+        default: "3"
+        choices: ["1", "2", "3"]
+        description: DeepFilterNet major version -> public asset deepfilternet{N}
+      - name: device
+        type: enum
+        default: auto
+        choices: [auto, cpu, cuda, mps]
+      - name: is_gpu
+        type: bool
+        default: false
+        description: Prefer GPU when available
+      - name: pf
+        type: bool
+        default: false
+        description: Enable DeepFilterNet post-filter
+
+# Downloadable weight files via urls (empty for DF — uses upstream download)
+weights: {}

@@ -11,8 +11,10 @@ This repo is the **open-source model layer** only.
 5. Keep packaging under **MPL-2.0** (file-level copyleft). Copy upstream LICENSE into `licenses/<name>/` when vendoring `libs/` — do not re-license upstream as MPL.
 6. Stable open API: `list_models` / `get_model` / `ensure_weights` / `load_model` + unified `ModelParams`.
 7. Public registries: `PublicAssetRegistry` + `PublicCapabilityRegistry` (`register_capability`). Use generic ids only (`deepfilternet3`, `denoise.speech`). Never add internal short names (`de3`, `dn.speech`) here.
-8. Denoise MVP: capability `denoise.speech` → asset `deepfilternet3`. Prefer `pip install -e ".[denoise]"` or `docker compose build && docker compose run --rm smoke`. Do not commit `*.so` / weight binaries.
-9. Keep Docker usage in-repo (`Dockerfile`, `compose.yaml`, `scripts/docker_smoke.sh`) so clones can run without host Python.
+8. Denoise: `pip install -e ".[denoise]"` **and** `docker compose` are both first-class. Canonical manifest: `src/taudio_models/resources/manifest.yaml` (repo-root `manifest.yaml` is a symlink).
+9. Never commit weights or `*.so`. Keep Docker files (`Dockerfile`, `docker-compose.yml`) in-repo and working.
+10. Prefer `resolve_models_root()` over ad-hoc path guesses.
+
 
 ## Layout
 

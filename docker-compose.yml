@@ -1,13 +1,10 @@
-# taudio-models — denoise via Docker (host Python untouched)
+# taudio-models — Docker usage (host Python untouched)
 #
-# Build once:
 #   docker compose build
-#
-# Denoise a file (place it under ./data/in/):
+#   docker compose run --rm smoke
 #   docker compose run --rm denoise /data/in/noisy.wav -o /data/out
 #
-# Self-check with synthetic audio (no input file needed):
-#   docker compose run --rm smoke
+# Local pip remains a first-class alternative; see README / docs/usage.md
 
 services:
   denoise:
@@ -21,8 +18,6 @@ services:
     volumes:
       - ./data:/data
       - taudio-model-cache:/cache
-    # Example override:
-    # docker compose run --rm denoise /data/in/noisy.wav -o /data/out --asset deepfilternet3
 
   smoke:
     image: taudio-models:denoise

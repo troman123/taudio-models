@@ -11,7 +11,8 @@ from pathlib import Path
 
 from taudio_models.api.registry import open_registry
 from taudio_models.cache import cache_root, ensure_model
-from taudio_models.manifest import load_manifest, repo_root_from
+from taudio_models.manifest import load_manifest
+from taudio_models.paths import resolve_models_root
 from taudio_models.registry import PublicAssetRegistry, open_capability_registry
 
 
@@ -20,7 +21,12 @@ def main(argv: list[str] | None = None) -> int:
         prog="taudio-models-fetch",
         description="List catalog / assets / capabilities / download weights.",
     )
-    parser.add_argument("--repo", type=Path, default=None, help="taudio-models repo root")
+    parser.add_argument(
+        "--repo",
+        type=Path,
+        default=None,
+        help="Models root containing manifest.yaml (default: auto-resolve)",
+    )
     parser.add_argument("--list", action="store_true", help="List weight ids in weights:")
     parser.add_argument(
         "--list-engines",
@@ -46,8 +52,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        root = Path(args.repo).resolve() if args.repo else repo_root_from()
-    except Exception as e:
+        root = resolve_models_root(args.repo)
+    except FileNotFoundError as e:
         print("error: %s" % e, file=sys.stderr)
         return 2
 

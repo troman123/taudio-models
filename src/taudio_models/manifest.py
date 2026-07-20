@@ -9,9 +9,16 @@ from typing import Any, Dict, Optional
 
 import yaml
 
+from taudio_models.paths import resolve_models_root
+
 
 def repo_root_from(start: Optional[Path] = None) -> Path:
-    """Find repository root by walking up until manifest.yaml is found."""
+    """
+    Find a checkout root by walking up until manifest.yaml is found.
+
+    Prefer ``resolve_models_root()`` for runtime; this helper remains for
+    scripts that must locate a git working tree from an arbitrary start path.
+    """
     cur = (start or Path.cwd()).resolve()
     for p in [cur, *cur.parents]:
         if (p / "manifest.yaml").is_file():
@@ -22,7 +29,7 @@ def repo_root_from(start: Optional[Path] = None) -> Path:
 def load_manifest(path: Optional[Path] = None) -> Dict[str, Any]:
     """Load manifest.yaml. If path is a directory, use <dir>/manifest.yaml."""
     if path is None:
-        path = repo_root_from() / "manifest.yaml"
+        path = resolve_models_root() / "manifest.yaml"
     else:
         path = Path(path)
         if path.is_dir():
@@ -37,6 +44,8 @@ def load_manifest(path: Optional[Path] = None) -> Dict[str, Any]:
         data["weights"] = data["models"]
     data.setdefault("catalog", {})
     data.setdefault("weights", {})
+    data.setdefault("assets", {})
+    data.setdefault("capabilities", {})
     data["_manifest_path"] = str(path.resolve())
     return data
 

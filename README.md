@@ -1,93 +1,95 @@
 # taudio-models
 
-Open-source **model layer** for audio AI: catalog, versions, `ModelParams` schemas, weight **download/cache**, load handles, and public capability hooks.
+Open-source **model layer** for audio AI: catalog, versions, parameter schemas, weight download/cache, load handles, and public capability hooks.
 
 License: [MPL-2.0](LICENSE). See [NOTICE](NOTICE).
 
-## Ways to use (all supported)
+## Supported ways to use
 
-| Method | When to use | Entry |
-|--------|-------------|--------|
-| **Local pip** | You have Python ≥ 3.10 and want CLI / library on the host | `pip install -e ".[denoise]"` |
-| **Docker** | Keep host Python untouched; same denoise flow in a container | `docker compose build` + `run` |
-| **Python API** | Embed in your own code (after pip install, or inside the image) | `open_capability_registry()` |
+Local install and Docker are **both first-class**. Same public ids (`denoise.speech`, `deepfilternet3`, …) in every path.
 
-Pick whichever fits; capabilities and asset ids are the same in all three.
+| Method | Best when | Start here |
+|--------|-----------|------------|
+| **Local pip** | You already use Python ≥ 3.10 on the host | § Local install |
+| **Docker** | You want an isolated runtime / no host Python changes | § Docker |
+| **Python API** | Embedding in your own code | § Python API |
+
+Full detail: [docs/usage.md](docs/usage.md).
+
+### Requirements (denoise)
+
+- **CPU RAM:** plan ~2 GB+ free (DeepFilterNet + PyTorch). Smaller hosts may need swap.
+- **Disk:** model weights download on first run (not stored in git).
+- **OS:** Linux/macOS; Windows via WSL2 recommended for native `libdf` wheels.
 
 ---
 
-### 1) Local install (pip)
+### Local install
 
 ```bash
 git clone https://github.com/troman123/taudio-models.git
 cd taudio-models
 python -m pip install -e ".[denoise]"
 
+# Optional: pin the checkout as data root (otherwise auto-detect / bundled manifest)
 export TAUDIO_MODELS_ROOT="$PWD"
-# optional: export TAUDIO_MODEL_CACHE="$HOME/.cache/taudio-models/models"
-
-taudio-models-denoise noisy.wav -o out/
-taudio-models-denoise noisy.wav -o out/ --asset deepfilternet2
 
 taudio-models-fetch --list-assets
 taudio-models-fetch --list-capabilities
+taudio-models-denoise path/to/noisy.wav -o out/
 ```
 
-Requires: Python ≥ 3.10. Extra `[denoise]` pulls the published `deepfilternet` package; weights download at runtime (not in git).
+Catalog-only (no denoise runtime):
+
+```bash
+python -m pip install -e .
+taudio-models-fetch --list-catalog
+```
+
+After `pip install`, a **bundled** `manifest.yaml` ships inside the package, so you do not have to keep a git checkout on `PYTHONPATH` for basic use. Setting `TAUDIO_MODELS_ROOT` still wins when you need a custom checkout.
 
 ---
 
-### 2) Docker
+### Docker
 
-In-repo files: [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml), [`scripts/docker_smoke.sh`](scripts/docker_smoke.sh).
+Files: [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml).
 
 ```bash
 git clone https://github.com/troman123/taudio-models.git
 cd taudio-models
 
 docker compose build
-
-# self-check (synthetic audio)
 docker compose run --rm smoke
 
-# denoise your file
-cp /path/to/noisy.wav data/in/
+cp path/to/noisy.wav data/in/
 docker compose run --rm denoise /data/in/noisy.wav -o /data/out
-# results: ./data/out
-# model cache: Docker volume taudio-model-cache
+# outputs → ./data/out
+# weight cache → Docker volume taudio-model-cache
 ```
-
-Same CLI as local (`taudio-models-denoise`); base image is published `python:3.10-slim-bookworm`.
 
 ---
 
-### 3) Python API
+### Python API
 
-Works after **local pip**, or from a shell inside the **Docker** image (`docker compose run --rm --entrypoint bash denoise`).
+Works with **local pip** or inside the **Docker** image.
 
 ```python
-import os
 from taudio_models import open_capability_registry
 
-# Point at the repo root that contains manifest.yaml
-os.environ.setdefault("TAUDIO_MODELS_ROOT", "/path/to/taudio-models")
-
-caps = open_capability_registry()
-caps.run_file("denoise.speech", "noisy.wav", "out/")
-# optional: asset_id="deepfilternet2"
+caps = open_capability_registry()  # uses TAUDIO_MODELS_ROOT, cwd checkout, or bundled manifest
+paths = caps.run_file("denoise.speech", "noisy.wav", "out/")
 ```
-
-Public names: `denoise.speech`, `deepfilternet3` (etc.).  
-Product short names (`dn.speech`, `de3`) stay in closed TaudioProcess.
 
 ---
 
-## What is (and is not) in git
+## Layout notes
 
-| In git | Not in git |
-|--------|------------|
-| Catalog / assets / capability schemas | Weight binaries |
-| Dockerfile + compose.yaml | Engine / product pipeline |
-| Packaging + registries | Proprietary SDKs |
+| Path | Role |
+|------|------|
+| `src/taudio_models/resources/manifest.yaml` | Canonical public catalog / assets / capabilities |
+| `manifest.yaml` | Symlink to the resources file (checkout convenience) |
+| `Dockerfile` / `docker-compose.yml` | Isolated denoise runtime |
 
-See [docs/api.md](docs/api.md), [docs/registries.md](docs/registries.md), [docs/usage.md](docs/usage.md).
+Weights and `*.so` are never committed.
+
+See also: [docs/api.md](docs/api.md) · [docs/registries.md](docs/registries.md) · [docs/model-cache.md](docs/model-cache.md)

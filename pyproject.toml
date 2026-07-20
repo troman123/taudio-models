@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "taudio-models"
-version = "0.3.1"
+version = "0.4.0"
 description = "Open-source audio model layer: catalog, versions, download/cache, load (no engine/pipeline)"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,6 +15,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Speech denoise runtime (published DeepFilterNet + I/O)
 denoise = [
   "deepfilternet>=0.5.6",
   "soundfile>=0.12",
@@ -25,5 +26,13 @@ dev = ["pytest>=7.0"]
 taudio-models-fetch = "taudio_models.cli:main"
 taudio-models-denoise = "taudio_models.denoise_cli:main"
 
+[project.urls]
+Homepage = "https://github.com/troman123/taudio-models"
+Documentation = "https://github.com/troman123/taudio-models/blob/main/docs/usage.md"
+Issues = "https://github.com/troman123/taudio-models/issues"
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+taudio_models = ["resources/*.yaml"]

@@ -1,5 +1,6 @@
-# Build context = repository root
-# Published base image only — no custom torch rebuild.
+# Published base image only (no custom torch rebuild).
+# Build from repository root:
+#   docker compose build
 FROM python:3.10-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -14,19 +15,20 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# Copy packaging metadata first for better layer cache when only code changes
-COPY pyproject.toml README.md LICENSE NOTICE manifest.yaml ./
+COPY pyproject.toml README.md LICENSE NOTICE ./
 COPY src ./src
 COPY docs ./docs
 COPY licenses ./licenses
 COPY libs ./libs
 COPY scripts ./scripts
+# Canonical manifest lives under package resources; place a copy at /app for TAUDIO_MODELS_ROOT
+COPY src/taudio_models/resources/manifest.yaml ./manifest.yaml
 
-RUN pip install --no-cache-dir -e ".[denoise]" \
+# Non-editable install (image is self-contained)
+RUN pip install --no-cache-dir ".[denoise]" \
  && mkdir -p /cache/models /data/in /data/out
 
 VOLUME ["/cache", "/data"]
 
-# Default: show CLI help. Override args for real denoise.
 ENTRYPOINT ["taudio-models-denoise"]
 CMD ["--help"]

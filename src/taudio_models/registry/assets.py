@@ -10,7 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from taudio_models.manifest import load_manifest, repo_root_from
+from taudio_models.manifest import load_manifest
+from taudio_models.paths import resolve_models_root
 
 
 @dataclass(frozen=True)
@@ -74,7 +75,7 @@ class PublicAssetRegistry:
     """
 
     def __init__(self, models_root: Optional[Path] = None):
-        self.root = Path(models_root).resolve() if models_root else repo_root_from()
+        self.root = resolve_models_root(models_root)
         self.manifest = load_manifest(self.root / "manifest.yaml")
         self._assets = _assets_from_manifest(self.manifest)
 

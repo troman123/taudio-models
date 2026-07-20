@@ -12,8 +12,8 @@ build/
 .ruff_cache/
 .cache/
 data/out/*
-!data/out/.gitkeep
 data/in/*
+!data/out/.gitkeep
 !data/in/.gitkeep
 *.ckpt
 *.pth

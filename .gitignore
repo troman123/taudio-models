@@ -10,6 +10,17 @@
 *.dylib
 *.dll
 
+# User I/O for Docker compose (keep placeholders)
+data/in/*
+!data/in/.gitkeep
+data/out/*
+!data/out/.gitkeep
+
+# Vendored native trees (optional local only; do not commit binaries)
+libs/**/*
+!libs/.gitkeep
+!libs/**/README.md
+
 # Python
 __pycache__/
 *.py[cod]

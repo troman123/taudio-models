@@ -17,7 +17,8 @@ from taudio_models.api.types import (
     StemKind,
 )
 from taudio_models.cache import ensure_model
-from taudio_models.manifest import load_manifest, repo_root_from
+from taudio_models.manifest import load_manifest
+from taudio_models.paths import resolve_models_root
 
 _MODEL_CTORS: Dict[str, Type[Model]] = {}
 
@@ -85,7 +86,7 @@ class ModelRegistry:
     """
 
     def __init__(self, models_root: Optional[Path] = None):
-        self.root = Path(models_root).resolve() if models_root else repo_root_from()
+        self.root = resolve_models_root(models_root)
         self.manifest = load_manifest(self.root / "manifest.yaml")
         from taudio_models import models as _models  # noqa: F401
 
