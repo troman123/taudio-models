@@ -193,16 +193,29 @@ def _load_model(
     torch.backends.cudnn.benchmark = True
     config = _load_config(config_path)
     _apply_inference_knobs(config, chunk_size=chunk_size, flash_attn=flash_attn)
+    resolved = _resolve_torch_dtype(dtype)
+    want_fp16 = resolved is not None and resolved == torch.float16
+
     model = get_model_from_config(_MODEL_TYPE, config)
+    # Convert empty params first so load_state_dict does not upcast half tensors.
+    if want_fp16:
+        model = model.half()
+        gc.collect()
+
     if model_path.is_file():
+        load_kwargs: Dict[str, Any] = {"map_location": "cpu"}
         try:
-            state = torch.load(
-                str(model_path),
-                map_location=torch.device("cpu"),
-                weights_only=True,
-            )
+            state = torch.load(str(model_path), weights_only=True, mmap=True, **load_kwargs)
         except TypeError:
-            state = torch.load(str(model_path), map_location=torch.device("cpu"))
+            try:
+                state = torch.load(str(model_path), weights_only=True, **load_kwargs)
+            except TypeError:
+                state = torch.load(str(model_path), **load_kwargs)
+        if want_fp16 and isinstance(state, dict):
+            for key, value in list(state.items()):
+                if torch.is_tensor(value) and torch.is_floating_point(value):
+                    state[key] = value.to(dtype=torch.float16)
+            gc.collect()
         model.load_state_dict(state)
         del state
         gc.collect()
@@ -222,9 +235,8 @@ def _load_model(
         device = torch.device("cpu")
         model = model.to(device)
 
-    resolved = _resolve_torch_dtype(dtype)
-    if resolved is not None and resolved != torch.float32:
-        model = model.to(dtype=resolved)
+    if want_fp16 and next(model.parameters()).dtype != torch.float16:
+        model = model.half()
         gc.collect()
 
     model.eval()
