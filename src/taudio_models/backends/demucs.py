@@ -60,6 +60,19 @@ def _install_runtime_stubs() -> None:
             julius.resample_frac = resample_frac
             sys.modules["julius"] = julius
 
+    if "lameenc" not in sys.modules:
+        try:
+            import lameenc  # noqa: F401
+        except ImportError:
+            lameenc = types.ModuleType("lameenc")
+
+            class Encoder:  # noqa: D401
+                def __init__(self, *args, **kwargs):  # noqa: ARG002
+                    raise RuntimeError("lameenc unavailable (mp3 encode only)")
+
+            lameenc.Encoder = Encoder
+            sys.modules["lameenc"] = lameenc
+
     if "openunmix" not in sys.modules:
         try:
             import openunmix  # noqa: F401
