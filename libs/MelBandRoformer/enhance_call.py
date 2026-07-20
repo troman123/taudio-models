@@ -216,7 +216,11 @@ def _load_model(
                 if torch.is_tensor(value) and torch.is_floating_point(value):
                     state[key] = value.to(dtype=torch.float16)
             gc.collect()
-        model.load_state_dict(state)
+        # Prefer in-place copy to avoid a second full parameter tree when possible.
+        try:
+            model.load_state_dict(state, assign=True)  # type: ignore[call-arg]
+        except TypeError:
+            model.load_state_dict(state)
         del state
         gc.collect()
 
