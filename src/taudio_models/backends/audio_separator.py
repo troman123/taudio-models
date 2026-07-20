@@ -230,13 +230,24 @@ def separate_file(
     log_level = logging.DEBUG if params.get("debug") else logging.INFO
     output_format = str(params.get("output_format") or "WAV")
 
-    separator = Separator(
-        log_level=log_level,
-        model_file_dir=str(model_store_dir),
-        output_dir=str(output_dir),
-        output_format=output_format,
-        force_gpu=use_gpu,
-    )
+    # audio-separator API drifted: older builds take force_gpu; 0.4x dropped it.
+    import inspect
+
+    ctor_kwargs: Dict[str, Any] = {
+        "log_level": log_level,
+        "model_file_dir": str(model_store_dir),
+        "output_dir": str(output_dir),
+        "output_format": output_format,
+    }
+    try:
+        accepted = set(inspect.signature(Separator.__init__).parameters)
+    except (TypeError, ValueError):
+        accepted = set()
+    if "force_gpu" in accepted:
+        ctor_kwargs["force_gpu"] = use_gpu
+    elif use_gpu and "use_autocast" in accepted:
+        ctor_kwargs["use_autocast"] = True
+    separator = Separator(**ctor_kwargs)
     separator.load_model(model_filename=model_filename)
     output_files = separator.separate(str(input_path))
     stems = _classify_outputs(
