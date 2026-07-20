@@ -74,7 +74,7 @@ def ensure_bandit_import(lib_path: Optional[Path] = None) -> Any:
             root = str(lib_path)
             if root not in sys.path:
                 sys.path.insert(0, root)
-            os.environ.setdefault("PROJECT_ROOT", root)
+            os.environ["PROJECT_ROOT"] = root
     from core import LightningSystem  # type: ignore
 
     return LightningSystem
@@ -138,7 +138,13 @@ def separate_file(
         )
 
     LightningSystem = ensure_bandit_import(lib_path)
+    # utils.config overwrites PROJECT_ROOT to cwd() on import — restore.
+    if lib_path is not None:
+        os.environ["PROJECT_ROOT"] = str(Path(lib_path).resolve())
     from utils.config import read_nested_yaml  # type: ignore
+
+    if lib_path is not None:
+        os.environ["PROJECT_ROOT"] = str(Path(lib_path).resolve())
 
     ckpt, _ckpt_dir = _resolve_ckpt(model_dir, model_filename)
     yaml_path = _find_yaml(model_dir, model_filename)
