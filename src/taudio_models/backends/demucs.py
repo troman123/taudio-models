@@ -51,7 +51,6 @@ def _install_runtime_stubs() -> None:
             julius = types.ModuleType("julius")
 
             def resample_frac(wav, from_sr, to_sr):
-                import torch
                 import torchaudio
 
                 if int(from_sr) == int(to_sr):
@@ -60,6 +59,26 @@ def _install_runtime_stubs() -> None:
 
             julius.resample_frac = resample_frac
             sys.modules["julius"] = julius
+
+    if "omegaconf" not in sys.modules:
+        try:
+            import omegaconf  # noqa: F401
+        except ImportError:
+            omegaconf = types.ModuleType("omegaconf")
+
+            class OmegaConf:  # noqa: D401
+                @staticmethod
+                def to_container(obj, resolve=True):  # noqa: ARG001
+                    if isinstance(obj, dict):
+                        return dict(obj)
+                    return obj
+
+                @staticmethod
+                def create(obj=None):
+                    return obj if obj is not None else {}
+
+            omegaconf.OmegaConf = OmegaConf
+            sys.modules["omegaconf"] = omegaconf
 
 
 def ensure_demucs_import(lib_path: Optional[Path] = None) -> Any:
