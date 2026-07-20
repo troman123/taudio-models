@@ -100,6 +100,15 @@ assets:
       Cinematic stem separation (speech/music/effects);
       weights via Zenodo / TAUDIO_BANDIT_DIR (db48/db64)
 
+  resemble:
+    display_name: Resemble Enhance
+    lib: libs/resemble_enhancev
+    upstream_ref: enhancer_stage2
+    download: upstream
+    license_spdx: MIT
+    license_file: licenses/resemble_enhance/LICENSE
+    description: Speech enhance / denoise (ResembleAI weights via HF)
+
 # ---------------------------------------------------------------------------
 # Public capabilities (generic — NOT internal dn.speech)
 # ---------------------------------------------------------------------------
@@ -139,6 +148,12 @@ capabilities:
     default_asset: bandit
     kind: separate
     description: Bandit speech/music/effects (bdiv)
+
+  enhance.resemble:
+    display_name: Resemble Enhance
+    default_asset: resemble
+    kind: enhance
+    description: Resemble speech enhance / denoise (reenh)
 
 # ---------------------------------------------------------------------------
 # Catalog (legacy ModelRegistry cards; deepfilter wired for MVP)
