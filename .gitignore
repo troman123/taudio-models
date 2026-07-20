@@ -52,3 +52,4 @@ build/
 !libs/MelBandRoformer/
 !libs/MelBandRoformer/**
 libs/**/__pycache__/
+.DS_Store
