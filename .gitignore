@@ -47,3 +47,7 @@ build/
 .idea/
 .vscode/
 *.swp
+
+# Explicitly track MelBand RoFormer vendor source (weights still ignored via *.ckpt)
+!libs/MelBandRoformer/
+!libs/MelBandRoformer/**
