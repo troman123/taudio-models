@@ -26,6 +26,17 @@ def build_separate_hpss(reg: PublicCapabilityRegistry) -> PublicCapability:
         params: Dict[str, Any],
     ) -> List[Path]:
         _ = asset_ensure
+        import os
+
+        if (os.environ.get("TAUDIO_MODELS_BACKEND") or "python").strip().lower() == "native":
+            from taudio_models.backends.native_bridge import run_file as native_run_file
+
+            return native_run_file(
+                "separate.hpss",
+                Path(input_path),
+                Path(output_dir),
+                params=params,
+            )
         return separate_file(input_path, output_dir, params=params)
 
     def run_array(
